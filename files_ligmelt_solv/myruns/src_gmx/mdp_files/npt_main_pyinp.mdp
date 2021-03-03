@@ -16,7 +16,7 @@ lincs_order             = 4         ; also related to accuracy
 ; Nonbonded settings 
 cutoff-scheme           = Verlet    ; Buffered neighbor searching
 ns_type                 = grid      ; search neighboring grid cells
-nstlist                 = 40        ; largely irrelevant with Verlet (20/40 optimal)
+nstlist                 = 20        ; largely irrelevant with Verlet (optimal: 20)
 rcoulomb                = 1.0       ; short-range electrostatic cutoff (in nm)
 rvdw                    = 1.0       ; short-range van der Waals cutoff (in nm)
 DispCorr                = EnerPres  ; account for cut-off vdW scheme
@@ -27,13 +27,13 @@ fourierspacing          = 0.12      ; grid spacing for FFT
 ewald_rtol              = 1e-5      ; error tolerance for FFT
 optimize_fft            = yes       ; from Micholas's script
 ; Temperature coupling is on
-Tcoupl                  = V-rescale ; modified Berendsen thermostat
-tc-grps                 = System    ; single coupling group
-tau_t                   = 0.2       ; time constant, in ps
-ref_t                   = 300       ; reference temperature, one for each group, in K
+Tcoupl                  = V-rescale        ; modified Berendsen thermostat
+tc-grps                 = py_tgroups       ; single coupling group
+tau_t                   = py_tempParRah    ; time constant, in ps
+ref_t                   = 300              ; reference temperature, one for each group, in K
 ; Pressure coupling is on
 Pcoupl                  = Parrinello-Rahman ; Parinello-Rahman
-tau_p                   = 8.0               ; Micholas script (time constant > 20*tau_t)
+tau_p                   = py_presParRah     ; Time constant > 20*tau_t (ps)
 compressibility         = 4.5e-5            ; Compressibility of water -- DOES NOT affect eqbm pressure
 ref_p                   = 1.0               ; reference pressure
 ; Periodic boundary conditions
