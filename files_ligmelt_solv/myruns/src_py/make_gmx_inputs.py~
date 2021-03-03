@@ -1,0 +1,44 @@
+# Supporting files for input_gen.py
+# Version: Mar-03-2021
+#------------------------------------------------------------------
+
+# Import modules
+import os
+import sys
+import numpy
+import re
+import shutil
+import glob
+import math
+#------------------------------------------------------------------
+
+# General copy script
+def gencpy(dum_maindir,dum_destdir,fylname):
+
+    srcfyl = dum_maindir + '/' + fylname
+
+    if not os.path.exists(srcfyl):
+        print('ERROR: ', srcfyl, 'not found')
+        return
+
+    desfyl = dum_destdir + '/' + fylname
+    shutil.copy2(srcfyl,desfyl)
+#------------------------------------------------------------------
+
+#Check pdb/psf/top files
+def check_inp_files(dum_inpdir):
+    # check structure files (.pdb/.gro)
+    if glob.glob(dum_inpdir+'/*.pdb') == [] and \
+       glob.glob(dum_inpdir+'/*.gro') == []:
+        raise RuntimeError("No structure (pdb/gro) files found")
+    if glob.glob(dum_inpdir+'/*.top') == []:
+        raise RuntimeError("No topology (top) files found")
+#------------------------------------------------------------------
+
+#Directory Paths
+
+
+#Required Files
+
+
+#Main Code
