@@ -27,15 +27,15 @@ fourierspacing          = 0.12      ; grid spacing for FFT
 ewald_rtol              = 1e-5      ; error tolerance for FFT
 optimize_fft            = yes       ; from Micholas's script
 ; Temperature coupling is on
-Tcoupl                  = V-rescale      ; modified Berendsen thermostat
-tc-grps                 = py_grpdata     ; single coupling group
-tau_t                   = py_tempBerend  ; time constant, in ps
-ref_t                   = 300            ; reference temperature, one for each group, in K
+Tcoupl                  = V-rescale          ; modified Berendsen thermostat
+tc-grps                 = py_tcgrps          ; py_grptype coupling group
+tau_t                   = py_Temptau_Berend  ; time constant, in ps
+ref_t                   = py_ref_t           ; reference temperature, one for each group, in K
 ; Pressure coupling is on
-Pcoupl                  = Berendsen      ; Berendsen coupling for faster equilibration
-tau_p                   = py_presBerend  ; Micholas script (time constant)
-compressibility         = 4.5e-5         ; Compressibility of water -- DOES NOT affect eqbm pressure
-ref_p                   = 1.0            ; reference pressure
+Pcoupl                  = Berendsen          ; Berendsen coupling for faster equilibration
+tau_p                   = py_Prestau_Berend  ; Micholas script (time constant)
+compressibility         = 4.5e-5             ; Compressibility of water -- DOES NOT affect eqbm pressure
+ref_p                   = py_ref_p           ; reference pressure
 ; Periodic boundary conditions
 pbc                     = xyz       ; 3-D PBC
 refcoord-scaling        = com       ; for pressure scaling

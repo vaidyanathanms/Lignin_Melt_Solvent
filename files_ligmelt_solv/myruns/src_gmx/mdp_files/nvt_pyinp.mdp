@@ -27,10 +27,10 @@ fourierspacing          = 0.12      ; grid spacing for FFT
 ewald_rtol              = 1e-5      ; error tolerance for FFT
 optimize_fft            = yes       ; from Micholas's script
 ; Temperature coupling is on
-Tcoupl                  = V-rescale  ; modified Berendsen thermostat
-tc-grps                 = System     ; single coupling group
-tau_t                   = py_temp_vr ; time constant, in ps
-ref_t                   = 300        ; reference temperature, one for each group, in K
+Tcoupl                  = V-rescale      ; modified Berendsen thermostat
+tc-grps                 = py_tcgrps      ; py_grp_style group
+tau_t                   = py_Temptau_vr  ; time constant, in ps
+ref_t                   = py_ref_t       ; reference temperature, one for each group, in K
 ; Pressure coupling is off
 Pcoupl                  = no        ; No pressure coupling
 ; Periodic boundary conditions
