@@ -78,7 +78,7 @@ for casenum in range(num_cases):
         os.mkdir(workdir1)
 
     # Set thermostat variables (change if there is a temp sweep)
-    temp_nvt,temp_npt_berend,temp_npt_parrah,pres_berend,pres_parrah,\
+    Tetau_nvt,Tetau_berend,Tetau_parrah,Prtau_berend,Prtau_parrah,\
         ref_temp, ref_pres = couple_coeff(inp_type,coeff_fyle)
 
     # Change to working directory
@@ -87,9 +87,11 @@ for casenum in range(num_cases):
     # Check for pdb/psf/top files
     check_inp_files(workdir1)
 
-    # Add mdp/shell script files
-    check_cpy_mdp_files(mdp_dir,workdir1,sh_fyles)
-    rerun = cpy_edit_sh_files(sh_dir,workdir1,mdp_fyles)
+    # Copy and edit mdp files
+    check_cpy_mdp_files(mdp_dir,workdir1,mdp_fyles,Tetau_nvt,\
+                        Tetau_berend,Tetau_parrah,Prtau_berend,\
+                        Prtau_parrah,ref_temp,ref_pres,tc_grps,tc_type)
+    rerun = cpy_edit_sh_files(sh_dir,workdir1,sh_fyles)
 
     
         

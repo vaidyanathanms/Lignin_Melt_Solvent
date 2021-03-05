@@ -28,16 +28,16 @@ def gencpy(dum_maindir,dum_destdir,fylname):
 # Set default thermostat coefficients
 def couple_coeff(inp_type,coeff_fyle = 'None'):
     # default. change if needed
-    temp_nvt = 0.1
-    temp_npt_berend  = 0.1
-    temp_npt_parrah  = 0.2
-    pres_berend = 0.5
+    tau_temp_nvt     = 0.1
+    tau_temp_berend  = 0.1
+    tau_temp_parrah  = 0.2
+    tau_pres_berend  = 0.5
     ref_temp = 300
     ref_pres = 1
     if inp_type == 'melts':
-        pres_parrah  = 5.0
+        tau_pres_parrah  = 5.0
     else:
-        pres_parrah  = 8.0
+        tau_pres_parrah  = 8.0
     if coeff_fyle != 'None':
         with open(coeff_fyle) as farg:
             for line in farg:
@@ -45,16 +45,16 @@ def couple_coeff(inp_type,coeff_fyle = 'None'):
                 if line.startswith('#'):
                     continue
                 words = line.split()
-                if words[0] = 'Temp_NVT':
-                    temp_nvt  = 0.1
-                elif words[0] == 'Temp_NPT_Berendsen':
-                    temp_npt_berend = float(words[1])
-                elif words[0] == 'Temp_NPT_Parrinello':
-                    temp_npt_parrah = float(words[1])
-                elif words[0] == 'Pres_Berendsen':
-                    temp_npt_parrah = float(words[1])
-                elif words[0] == 'Pres_Parrinello':
-                    pres_parrah = float(words[1])
+                if words[0] = 'TauTemp_NVT':
+                    tau_temp_nvt  = 0.1
+                elif words[0] == 'TauTemp_Berendsen':
+                    tau_temp_berend = float(words[1])
+                elif words[0] == 'TauTemp_Parrinello':
+                    tau_temp_parrah = float(words[1])
+                elif words[0] == 'TauPres_Berendsen':
+                    tau_pres_berend = float(words[1])
+                elif words[0] == 'TauPres_Parrinello':
+                    tau_pres_parrah = float(words[1])
                 elif words[0] == 'Ref_Temp':
                     ref_temp  = float(words[1])
                 elif words[0] == 'Ref_Pres':
@@ -62,7 +62,8 @@ def couple_coeff(inp_type,coeff_fyle = 'None'):
                 else:
                     raise RuntimeError("Unknown keyword: "+ words[0] \
                                        + "in" + str(coeff_fyle))
-    return temp_vres,temp_parrah,pres_parrah
+    return tau_temp_nvt, tau_temp_berend, tau_temp_parrah, \
+        tau_pres_berend, tau_pres_parrah, ref_temp, ref_pres
 #------------------------------------------------------------------
 
 #Check pdb/psf/top files
@@ -76,8 +77,30 @@ def check_inp_files(dum_inpdir):
 #------------------------------------------------------------------
 
 # Check for mdp files and copy/edit if not present
-def check_cpy_mdp_files(srcdir,destdir,mdp_fyles):
-    # 
+def check_cpy_mdp_files(srcdir,destdir,mdp_fyles,Tetau_nvt,\
+                        Tetau_berend,Tetau_parrah,Prtau_berend,\
+                        Prtau_parrah,ref_temp,ref_pres,tc_grpdata,\
+                        tc_grptype):
+     if not os.path.exists(mdp_fyles[fylcnt]):
+         gencpy(srcdir,desdir,mdp_fyles[fylcnt])
+         py_fname = mdp_fyles[fylcnt]
+         rev_fname = py_fname.replace('_pyinp','')
+         print(rev_fname)
+         fr  = open(py_fname,'r')
+         fw  = open(rev_fname,'w')
+
+         fid = fr.read().replace("py_tcgrps",tc_grpdata).\
+               replace("py_grptype",tc_grptype).\
+               replace("py_Temptau_vr",str(Tetau_nvt)).\
+               replace("py_Temptau_Berend", str(Tetau_berend)).\
+               replace("py_Temptau_ParRah",str(Tetau_parrah)).\
+               replace("py_Prestau_Berend",str(Prtau_berend)).\
+               replace("py_Prestau_ParRah", str(Prtau_parrah)).\
+               replace("py_ref_t",str(ref_temp)).\
+               replace("py_ref_p",str(ref_pres))
+         fw.write(fid)
+         fw.close()
+         fr.close()
 
 #------------------------------------------------------------------
 # Copy and edit mdp files
@@ -92,10 +115,10 @@ def cpy_edit_sh_files(srcdir,destdir,sh_fyles):
 
     if rerun == 1: #tpr files present
         for fylcnt in range(len(sh_fyles)):
-            if not os.path.exists(mdp_fyles[fylcnt]):
-                raise RuntimeError(mdp_fyles[fylcnt] + "not found in" \
+            if not os.path.exists(sh_fyles[fylcnt]):
+                raise RuntimeError(sh_fyles[fylcnt] + "not found in" \
                                    + srcdir)
-            gencpy(srcdir,desdir,mdp_fyles[fylcnt])
+            gencpy(srcdir,desdir,sh_fyles[fylcnt])
             
 
 
