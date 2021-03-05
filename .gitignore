@@ -1,0 +1,5 @@
+# Excluded files for git
+LigninBuilder-master/
+src_poplar/
+hemicellulose/
+/init_codes
