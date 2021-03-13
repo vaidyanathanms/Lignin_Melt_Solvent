@@ -28,12 +28,12 @@ def gencpy(dum_maindir,dum_destdir,fylname):
 # Set default thermostat coefficients
 def couple_coeff(inp_type,coeff_fyle = 'None'):
     # default. change if needed
+    ref_temp = 300
+    ref_pres = 1
     tau_temp_nvt     = 0.1
     tau_temp_berend  = 0.1
     tau_temp_parrah  = 0.2
     tau_pres_berend  = 0.5
-    ref_temp = 300
-    ref_pres = 1
     if inp_type == 'melts':
         tau_pres_parrah  = 5.0
     else:
@@ -46,7 +46,7 @@ def couple_coeff(inp_type,coeff_fyle = 'None'):
                     continue
                 words = line.split()
                 if words[0] = 'TauTemp_NVT':
-                    tau_temp_nvt  = 0.1
+                    tau_temp_nvt  = float(words[1])
                 elif words[0] == 'TauTemp_Berendsen':
                     tau_temp_berend = float(words[1])
                 elif words[0] == 'TauPres_Berendsen':
