@@ -1,13 +1,11 @@
 #!/bin/bash
 
 #BSUB -P BIP189
-#BSUB -W 00:05
+#BSUB -W 00:10
 #BSUB -nnodes 1
-#BSUB -J testcase_2
+#BSUB -J py_jobname
 #BSUB -o outdir/out.%J
 #BSUB -e outdir/err.%J
-
-
 
 module load caascade/1.1.beta .gcc/6.4.0 spectrum-mpi/10.3.1.2-20200121 gcc/6.4.0 spectrum-mpi/10.3.1.2-20200121
 module load gromacs/2020.2-rdtscp_off
@@ -21,11 +19,17 @@ echo $PWD
 mkdir -p initdir
 
 # editconf box
-jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi editconf -f WT.pdb -bt cubic -d 0.5  -o WTbox.pdb
+jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi editconf -f py_meltconf -bt cubic -d 0.5  -o py_boxmeltconf
 wait
 
-# make tpr file
-jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi grompp -f minim.mdp -p switchgrass_nch_30.top -c WTbox.pdb -o enermin.tpr
+# solvate with solvent
+py_solvate_1
+
+# solvate with cosolvent
+py_solvate_2
+
+# make enermin_tpr file
+jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi grompp -f minim.mdp -p py_topol -c py_finconf.pdb -o enermin.tpr
 wait
 
 cp *.pdb initdir/

@@ -21,7 +21,7 @@ echo $PWD
 mkdir -p initdir
 
 # editconf box
-jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi editconf -f WT.pdb -bt cubic -d 0.5  -o WTbox.pdb
+jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi editconf -f WT.pdb -bt cubic -d 1.0 -o WTbox.pdb
 wait
 
 # make tpr file
