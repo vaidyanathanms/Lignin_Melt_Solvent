@@ -28,9 +28,9 @@ ewald_rtol              = 1e-5      ; error tolerance for FFT
 optimize_fft            = yes       ; from Micholas's script
 ; Temperature coupling is on
 Tcoupl                  = V-rescale ; modified Berendsen thermostat
-tc-grps                 = System    ; single coupling group
-tau_t                   = 0.1       ; time constant, in ps
-ref_t                   = 300       ; reference temperature, one for each group, in K
+tc-grps                 = resnr_1_to_22 resname_GVL resname_TIP3_    ; single coupling group
+tau_t                   = 0.1 0.1 0.1       ; time constant, in ps
+ref_t                   = 300 300 300      ; reference temperature, one for each group, in K
 ; Pressure coupling is off
 Pcoupl                  = no        ; No pressure coupling
 ; Periodic boundary conditions

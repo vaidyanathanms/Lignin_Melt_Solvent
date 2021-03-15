@@ -28,7 +28,7 @@ ewald_rtol              = 1e-5      ; error tolerance for FFT
 optimize_fft            = yes       ; from Micholas's script
 ; Temperature coupling is on
 Tcoupl                  = V-rescale      ; modified Berendsen thermostat
-tc-grps                 = py_tcgrps      ; py_grp_style group
+tc-grps                 = py_tcgrps      ; py_grptype group
 tau_t                   = py_Temptau_vr  ; time constant, in ps
 ref_t                   = py_ref_t       ; reference temperature, one for each group, in K
 ; Pressure coupling is off
