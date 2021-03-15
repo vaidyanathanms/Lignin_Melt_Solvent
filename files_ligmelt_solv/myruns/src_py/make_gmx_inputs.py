@@ -334,16 +334,16 @@ def edit_main_top_file(main_topfyle,ff,top_arr,prm_arr,workdir):
     inc_top = ''
     inc_pre = '#include '
     for i in range(len(top_arr)):
-        inc_top = inc_top + inc_pre + "'" + ff_dir + '/' + \
-                  top_arr[i] + "' " + '\n'
+        inc_top = inc_top + inc_pre + "\"" + ff_dir + '/' + \
+                  top_arr[i] + "\"" + '\n'
     inc_top = inc_top + '\n'
 
     # add parameters before [ system ]
     inc_prm = ''
     inc_pre = '#include '
     for i in range(len(prm_arr)):
-        inc_prm = inc_prm + inc_pre + "'" + ff_dir + '/' + \
-                  prm_arr[i] + "' " + '\n'
+        inc_prm = inc_prm + inc_pre + "\"" + ff_dir + '/' + \
+                  prm_arr[i] + "\"" + '\n'
     inc_prm = inc_prm + '\n'
 
     with open(main_topfyle,"r") as fin:
@@ -378,7 +378,7 @@ def edit_sh_files(workdir,cont_run,biomass,inp_type,polycfg,\
         
         # solvate commands
         solv_js = 'jsrun -X 1 -n 1 -c 7 -a 1 -g 1 ' + \
-                  '--launch_distribution plane: 1 ' + \
+                  '--launch_distribution plane:1 ' + \
                   '-b packed:7 gmx_mpi solvate'
         if inp_type == 'melts':
             solv_str1 = '# no solvation'
