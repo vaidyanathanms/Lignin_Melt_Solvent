@@ -22,14 +22,14 @@ mkdir -p initdir
 jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi editconf -f py_meltconf -bt cubic -d 0.5  -o py_boxmeltconf
 wait
 
-# solvate with solvent
+# solvate with solvent - organic solvent
 py_solvate_1
 
-# solvate with cosolvent
+# solvate with cosolvent - water
 py_solvate_2
 
 # make enermin_tpr file
-jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi grompp -f minim.mdp -p py_topol -c py_finconf.pdb -o enermin.tpr
+jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi grompp -f minim.mdp -p py_topol -c py_finconf -o enermin.tpr
 wait
 
 cp *.pdb initdir/
