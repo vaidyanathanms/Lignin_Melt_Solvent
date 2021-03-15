@@ -35,11 +35,11 @@ o_sol_typ = 'EOH'  # prefix for solvent file for solvents/cosolvents
 wat_type  = 'tip3p' # prefix for water file for coslvents
 solv_name = o_sol_typ # change if prefix is different from name in PDB
 wat_name  = 'TIP3_' # diff from prefix
-run_arr   = [1] # run number
+run_arr   = [1,2,3] # run number
 nchains   = 1     # number of polymer chains
 npoly_res = 22  # number of polymer residues
-n_orgsolv = 1000 # number of organic solvents
-nwater    = 4000 # number of water molecules (for cosolvents)
+n_orgsolv = 2492 # number of organic solvents
+nwater    = 4063 # number of water molecules (for cosolvents)
 box_dim   = 15 # box size for solvent only. cosolvent=+3
 #------------------------------------------------------------------
 
@@ -156,3 +156,7 @@ for casenum in range(len(run_arr)):
             edit_sh_files(workdir1,cont_run,biomass,inp_type,poly_conffile,\
                           n_orgsolv,nwater,poly_topedit,o_sol_typ,wat_type,\
                           sh_pp_fyle,sh_md_fyle,ff_dir,sol_cfg,box_dim)
+
+    # Write end of loop and return directory handle to main directory
+    print( "End of run number: ", run_arr[casenum])
+    os.chdir(main_dir)# current dir

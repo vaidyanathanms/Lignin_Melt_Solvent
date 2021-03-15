@@ -355,7 +355,7 @@ def edit_main_top_file(main_topfyle,ff,top_arr,prm_arr,workdir):
                     line=line.replace(line,inc_top+line)
                 fout.write(line)
 
-
+    return edited_file
 #------------------------------------------------------------------
 
 # Edit shell script files
