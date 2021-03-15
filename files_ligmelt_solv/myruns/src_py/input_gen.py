@@ -142,6 +142,11 @@ for casenum in range(len(run_arr)):
     # Change to working directory
     os.chdir(workdir1)
 
+    # Make an outdir for writing job files from summit
+    sum_out_dir = workdir1 + '/outdir'
+    if not os.path.isdir(sum_out_dir):
+        os.mkdir(sum_out_dir)
+
     # Edit shell script files if needed (edit_sh_fyle = 1)
     if edit_sh_fyle:
         if inp_type == 'melts':
