@@ -1,6 +1,6 @@
 Ref_Temp	463
 Ref_Pres	1
-Melt_Topfile	switchgrass_MYB.top
+#Melt_Topfile	switchgrass_MYB.top
 TauTemp_NVT	0.1
 TauTemp_Berendsen	0.1
 TauPres_Berendsen	0.5
