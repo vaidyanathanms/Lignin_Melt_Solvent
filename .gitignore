@@ -4,3 +4,4 @@ src_poplar/
 hemicellulose/
 /init_codes
 /files_pnc_lignin
+files_ligmelt_solv/myruns/src_py/__pycache__*
