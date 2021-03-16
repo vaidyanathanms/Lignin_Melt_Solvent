@@ -3,7 +3,7 @@
 #BSUB -P BIP189
 #BSUB -W 01:50
 #BSUB -nnodes 1
-#BSUB -J monodisperse
+#BSUB -J THF_MYB
 #BSUB -o outdir/out.%J
 #BSUB -e outdir/err.%J
 
@@ -22,13 +22,21 @@ mkdir -p outdir
 mkdir -p trajfiles
 
 #---------------------------------------------------------Generate initial files----------------------------------
+ftc_grp=./tcgrp_indx.ndx.
+if ! test -f "$ftc_grp"; then
+	echo "begin generating tempearture coupling groups.."
+	# generate enermin files
+	jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi select -s initconf.gro -sf tcgrp_inp.txt -on tcgrp_indx.ndx
+	
+fi
+#---------------------------------------------------------Generate initial files----------------------------------
+
 finit_inp=./enermin.tpr
 if ! test -f "$finit_inp"; then
 	echo "begin generating enermin.tpr.."
 	# generate enermin files
-	jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi grompp -f minim.mdp -c switchgrass_boxedit.pdb -p switchgrass_nch_10.top -o enermin.tpr
-	wait
-
+	jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi grompp -f minim.mdp -c initconf.gro -p switchgrass_MYB.top -o enermin.tpr
+	
 fi
 wait
 
@@ -43,7 +51,7 @@ if ! test -f "$fmin_inp"; then
 
 	echo "begin generating nvt.tpr.."
 	# generate nvt files
-	jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi grompp -f nvt.mdp -c confout_min.gro -p switchgrass_nch_10.top -o nvt.tpr 
+	jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi grompp -f nvt.mdp -c confout_min.gro -p switchgrass_MYB.top -n tcgrp_indx.ndx -o nvt.tpr 
 	wait
 
         cp md_min.log trajfiles/md_min.log
@@ -64,7 +72,7 @@ if ! test -f "$fnvt_inp"; then
 
 	echo "begin generating npt_berendsen.tpr.."
 	# generate npt_berendsen files
-	jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi grompp -f npt_berendsen.mdp -c confout_nvt.gro -p switchgrass_nch_10.top -o npt_berendsen.tpr
+	jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi grompp -f npt_berendsen.mdp -c confout_nvt.gro -p switchgrass_MYB.top -n tcgrp_indx.ndx -o npt_berendsen.tpr
 	wait
 
 	cp md_nvt.log trajfiles/md_nvt.log
@@ -85,7 +93,7 @@ if ! test -f "$fnpt_inp"; then
 
 	echo "begin generating npt_main.tpr.."
 	# generate npt_berendsen files
-	jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi grompp -f npt_main.mdp -c confout_npt_berendsen.gro -p switchgrass_nch_10.top -o npt_main.tpr
+	jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi grompp -f npt_main.mdp -c confout_npt_berendsen.gro -p switchgrass_MYB.top -n tcgrp_indx.ndx -o npt_main.tpr
 	wait
 
 	cp md_npt_berendsen.log trajfiles/md_npt_berendsen.log
