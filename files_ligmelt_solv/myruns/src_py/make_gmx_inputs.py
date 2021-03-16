@@ -1,5 +1,5 @@
 # Supporting files for input_gen.py
-# Version: Mar-03-2021
+# Version: Mar-15-2021
 #------------------------------------------------------------------
 
 # Import modules
@@ -26,6 +26,47 @@ def gencpy(dum_maindir,dum_destdir,fylname):
     shutil.copy2(srcfyl,desfyl)
 #------------------------------------------------------------------
 
+# Check consistency of input dimensions
+def check_arr_dim(ot_len,on_len,wt_len,wn_len,no_len,nw_len,tlen):
+    if ot_len != on_len or ot_len != wt_len or ot_len != wn_len or \
+       ot_len != no_len or ot_len != nw_len or ot_len != tlen:
+        raise RuntimeError('Unequal input lengths')
+#------------------------------------------------------------------
+
+# Assign input values
+def assign_vals(otyp_arr,oname_arr,wtyp_arr,wname_arr,norg_arr,\
+                nwat_arr,temp_arr,inp_type,ival):
+
+    if inp_type == 'melts':
+        o_sol_typ = 'None' 
+        solv_name = 'None'
+        wat_type  = 'None'
+        wat_name  = 'None'
+        n_orgsolv = 0
+        nwater = 0
+        ref_temp = temp_arr[ival]
+    elif inp_type == 'cosolvents':
+        o_sol_typ = otyp_arr[ival]
+        solv_name = oname_arr[ival]
+        wat_type  = wtyp_arr[ival]
+        wat_name  = wname_arr[ival]
+        n_orgsolv = norg_arr[ival]
+        nwater    = nwat_arr[ival]
+        ref_temp  = temp_arr[ival]
+    elif inp_type == 'solvents':
+        o_sol_typ = otyp_arr[ival]
+        solv_name = oname_arr[ival]
+        wat_type  = 'None'
+        wat_name  = 'None'
+        n_orgsolv = norg_arr[ival]
+        nwater    = 0
+        ref_temp  = temp_arr[ival]
+
+
+    return o_sol_typ,solv_name,wat_type,wat_name,n_orgsolv,\
+        nwater,ref_temp
+#------------------------------------------------------------------
+
 # Set working directory
 def set_working_dir(rundir,inp_type,solv_type = 'None'):
     if inp_type == 'solvents':
@@ -45,7 +86,7 @@ def set_working_dir(rundir,inp_type,solv_type = 'None'):
 # Set default thermostat coefficients
 def couple_coeff(inp_type,coeff_fyle = 'None'):
     # default. change if needed
-    ref_temp = 300
+
     ref_pres = 1
     tau_temp_nvt     = 0.1
     tau_temp_berend  = 0.1
@@ -73,18 +114,15 @@ def couple_coeff(inp_type,coeff_fyle = 'None'):
                     tau_temp_parrah = float(words[1])
                 elif words[0] == 'TauPres_Parrinello':
                     tau_pres_parrah = float(words[1])
-                elif words[0] == 'Ref_Temp':
-                    ref_temp  = float(words[1])
                 elif words[0] == 'Ref_Pres':
                     ref_pres  = float(words[1])
                 elif words[0] == 'Melt_Topfile':
                     melt_topname = words[1]
                 else:
                     raise RuntimeError("Unknown keyword: "+ words[0] \
-                                       + "in" + str(coeff_fyle))
+                                       + " in " + str(coeff_fyle))
     return tau_temp_nvt,tau_temp_berend, tau_temp_parrah, \
-        tau_pres_berend,tau_pres_parrah,ref_temp,ref_pres, \
-        melt_topname
+        tau_pres_berend,tau_pres_parrah,ref_pres,melt_topname
 #------------------------------------------------------------------
 
 #Check pdb/psf/top files for the melt (or polymer)
@@ -122,6 +160,24 @@ def check_inp_files(dum_inpdir,top_name):
 
 #------------------------------------------------------------------
 
+# Create index groups
+def create_indxgrps(destdir,inp_type,npoly_res,solv_name,wat_name):
+    tcgrp_fname = 'tcgrp_inp.txt'
+    if inp_type == 'melts':
+        tc_str = 'System'
+    elif inp_type == 'solvents':
+        tc_str = 'resnr_1_to_'+ str(npoly_res)
+        tc_str = tc_str + ';  ' + 'resname_' + solv_name
+    elif inp_type == 'cosolvents':
+        tc_str = 'resnr_1_to_'+ str(npoly_res)
+        tc_str = tc_str + ';  ' + 'resname_' + solv_name
+        tc_str = tc_str + ';  ' + 'resname_' + wat_name
+    
+    with open(destdir+'/'+tcgrp_fname,'w') as fw:
+        fw.write(tc_str)
+    return tcgrp_fname
+#------------------------------------------------------------------
+
 # Create temperature coupling groups
 def create_tcgrps(inp_type,npoly_res,solv_name,wat_name):
     if inp_type == 'melts':
@@ -129,12 +185,12 @@ def create_tcgrps(inp_type,npoly_res,solv_name,wat_name):
         tc_typ = 'Single'
     elif inp_type == 'solvents':
         tc_grp = 'resnr_1_to_'+ str(npoly_res)
-        tc_grp = tc_grp + '\t' + 'resname_' + solv_name
+        tc_grp = tc_grp + '  ' + 'resname_' + solv_name
         tc_typ = 'Multi '
     elif inp_type == 'cosolvents':
         tc_grp = 'resnr_1_to_'+ str(npoly_res)
-        tc_grp = tc_grp + '\t' + 'resname_' + solv_name
-        tc_grp = tc_grp + '\t' + 'resname_' + wat_name
+        tc_grp = tc_grp + '  ' + 'resname_' + solv_name
+        tc_grp = tc_grp + '  ' + 'resname_' + wat_name
         tc_typ = 'Multi '
     return tc_grp, tc_typ
 #------------------------------------------------------------------
@@ -149,13 +205,11 @@ def check_cpy_mdp_files(srcdir,destdir,mdp_fyles,inp_type,Tetau_nvt\
         print("copying", coeff_fyle)
         gencpy(headdir,destdir,coeff_fyle)
 
+    # Only temperatures need to have multiple coupling groups
     str_Tetau_nvt = genstr(inp_type,Tetau_nvt)
     str_Tetau_ber = genstr(inp_type,Tetau_berend)
     str_Tetau_par = genstr(inp_type,Tetau_parrah)
-    str_Prtau_ber = genstr(inp_type,Prtau_berend)
-    str_Prtau_par = genstr(inp_type,Prtau_parrah)
     str_temp = genstr(inp_type,ref_temp)
-    str_pres = genstr(inp_type,ref_pres)
 
     for mdp_fname in mdp_fyles:
         if not os.path.exists(srcdir + '/' + mdp_fname):
@@ -170,10 +224,10 @@ def check_cpy_mdp_files(srcdir,destdir,mdp_fyles,inp_type,Tetau_nvt\
               replace("py_Temptau_vr",str_Tetau_nvt).\
               replace("py_Temptau_Berend", str_Tetau_ber).\
               replace("py_Temptau_ParRah",str_Tetau_par).\
-              replace("py_Prestau_Berend",str_Prtau_ber).\
-              replace("py_Prestau_ParRah", str_Prtau_par).\
+              replace("py_Prestau_Berend",str(Prtau_berend)).\
+              replace("py_Prestau_ParRah",str(Prtau_parrah)).\
               replace("py_ref_t",str_temp).\
-              replace("py_ref_p",str_pres)
+              replace("py_ref_p",str(ref_pres))
         fw.write(fid)
         fw.close()
         fr.close()
@@ -184,9 +238,9 @@ def genstr(inp_type,inp_vals):
     if inp_type == 'melts':
         out_str = str(inp_vals)
     elif inp_type == 'solvents':
-        out_str = str(inp_vals) + '\t' + str(inp_vals)
+        out_str = str(inp_vals) + '  ' + str(inp_vals)
     elif inp_type == 'cosolvents':
-        out_str = str(inp_vals) + '\t' + str(inp_vals) + '\t' + \
+        out_str = str(inp_vals) + '  ' + str(inp_vals) + '  ' + \
                   str(inp_vals)
     return out_str
 #------------------------------------------------------------------
@@ -235,11 +289,11 @@ def create_ff_dir(destdir):
     return ff_dir
 #------------------------------------------------------------------
 
-# Check and copy solvent topology/initguess/prm files
-def cpy_solv_files(top_dir,conf_dir,prm_dir,ff_dir,inp_type,\
+# Check and copy solvent topology/initguess/itp files
+def cpy_solv_files(top_dir,conf_dir,itp_dir,ff_dir,inp_type,\
                    osoltype,wat_typ='tip3p'):
     
-    top_fyl = []; prm_fyl = []; conf_fyl = [];
+    top_fyl = []; itp_fyl = []; conf_fyl = [];
     if inp_type == 'solvents' or inp_type == 'cosolvents':
 
         # Check topology
@@ -249,12 +303,12 @@ def cpy_solv_files(top_dir,conf_dir,prm_dir,ff_dir,inp_type,\
         gencpy(src_dir,ff_dir,o_file)
         top_fyl.append(o_file)
 
-        # Check prm
-        src_dir = prm_dir; o_file = osoltype + '.prm'
+        # Check itp
+        src_dir = itp_dir; o_file = osoltype + '.itp'
         if not os.path.exists(src_dir + '/' + o_file):
             raise RuntimeError(o_file+" not found in " + src_dir)
         gencpy(src_dir,ff_dir,o_file)
-        prm_fyl.append(o_file)
+        itp_fyl.append(o_file)
 
         # Check gro/pdb conf file
         src_dir = conf_dir
@@ -270,18 +324,18 @@ def cpy_solv_files(top_dir,conf_dir,prm_dir,ff_dir,inp_type,\
 
     if inp_type == 'cosolvents': #with second solvent; def: water
         
-        # check top/prm/conf for cosolvent
+        # check top/itp/conf for cosolvent
         src_dir = top_dir; w_file = wat_typ + '.top'
         if not os.path.exists(src_dir + '/' + w_file):
             raise RuntimeError(w_file + "not found in " + src_dir)
         gencpy(src_dir,ff_dir,w_file)
         top_fyl.append(w_file)
 
-        src_dir = prm_dir; w_file = wat_typ + '.prm'
+        src_dir = itp_dir; w_file = wat_typ + '.itp'
         if not os.path.exists(src_dir + '/' + w_file):
             raise RuntimeError(w_file + "not found in " + src_dir)
         gencpy(src_dir,ff_dir,w_file)
-        prm_fyl.append(w_file)
+        itp_fyl.append(w_file)
 
         src_dir = conf_dir
         w_file1 = wat_typ + '.gro'; w_file2 = wat_typ + '.pdb'; 
@@ -294,11 +348,11 @@ def cpy_solv_files(top_dir,conf_dir,prm_dir,ff_dir,inp_type,\
         else:
             raise RuntimeError(wat_typ+" conf not found in "+src_dir)
 
-    return top_fyl,prm_fyl,conf_fyl
+    return top_fyl,itp_fyl,conf_fyl
 #------------------------------------------------------------------
 
 # Edit melt/polymer topology to add solvent/cosolvent details
-def edit_main_top_file(main_topfyle,ff,top_arr,prm_arr,workdir):
+def edit_main_top_file(main_topfyle,ff,top_arr,itp_arr,workdir):
 
     # check whether main_topfyle has the required data. If so no need
     # to edit and make the new ones. Slightly inefficient - but OK!
@@ -309,13 +363,13 @@ def edit_main_top_file(main_topfyle,ff,top_arr,prm_arr,workdir):
                 if top_arr[i] in line:
                     req_flag += 1 # found string
 
-    for i in range(len(prm_arr)):
+    for i in range(len(itp_arr)):
         with open(main_topfyle) as fchk:
             for line in fchk:
-                if prm_arr[i] in line:
+                if itp_arr[i] in line:
                     req_flag += 1 # found string
 
-    sum_req = len(prm_arr) + len(top_arr)
+    sum_req = len(itp_arr) + len(top_arr)
     if req_flag == sum_req:
         print('Present topol file in the directory has all reqd data')
         return main_topfyle
@@ -339,18 +393,18 @@ def edit_main_top_file(main_topfyle,ff,top_arr,prm_arr,workdir):
     inc_top = inc_top + '\n'
 
     # add parameters before [ system ]
-    inc_prm = ''
+    inc_itp = ''
     inc_pre = '#include '
-    for i in range(len(prm_arr)):
-        inc_prm = inc_prm + inc_pre + "\"" + ff_dir + '/' + \
-                  prm_arr[i] + "\"" + '\n'
-    inc_prm = inc_prm + '\n'
+    for i in range(len(itp_arr)):
+        inc_itp = inc_itp + inc_pre + "\"" + ff_dir + '/' + \
+                  itp_arr[i] + "\"" + '\n'
+    inc_itp = inc_itp + '\n'
 
     with open(main_topfyle,"r") as fin:
         with open(edited_file,"w") as fout:
             for line in fin:
                 if "[ moleculetype ]" in line:
-                    line=line.replace(line,inc_prm+line)
+                    line=line.replace(line,inc_itp+line)
                 elif "[ system ]" in line:
                     line=line.replace(line,inc_top+line)
                 fout.write(line)
@@ -361,7 +415,7 @@ def edit_main_top_file(main_topfyle,ff,top_arr,prm_arr,workdir):
 # Edit shell script files
 def edit_sh_files(workdir,cont_run,biomass,inp_type,polycfg,\
                   nsolv,nwater,topfyle,o_sol_type,wat_typ,pp_fyle\
-                  ,md_fyle,ffdir,solcfg,dim):
+                  ,md_fyle,ffdir,solcfg,dim,indx_fyle):
 
     # use the last element (others correspond to full path)
     # underscored variable corresponds to split file name
@@ -375,6 +429,7 @@ def edit_sh_files(workdir,cont_run,biomass,inp_type,polycfg,\
         if inp_type == 'solvents' or inp_type == 'cosolvents':
             jname = jname + '_' + o_sol_type #py_jobname
         box_conffyle = "boxedit_" + poly_cfg
+        fin_conf = 'initconf.gro' # in gro format
         
         # solvate commands
         solv_js = 'jsrun -X 1 -n 1 -c 7 -a 1 -g 1 ' + \
@@ -383,7 +438,6 @@ def edit_sh_files(workdir,cont_run,biomass,inp_type,polycfg,\
         if inp_type == 'melts':
             solv_str1 = '# no solvation'
             solv_str2 = '# no cosolvation'
-            fin_conf  = poly_cfg
         elif inp_type == 'solvents':
             sol_cfg  = ret_file_str(solcfg[0])
             sol_cfg1 = ff_dir + '/' + sol_cfg
@@ -393,7 +447,6 @@ def edit_sh_files(workdir,cont_run,biomass,inp_type,polycfg,\
                         + ' -box ' + str(dim) + ' ' + str(dim) + ' '\
                         + str(dim) + '\n'
             solv_str2 = '# no cosolvation'
-            fin_conf  = 'solv_' + poly_cfg
         elif inp_type == 'cosolvents':
             sol_cfg  = ret_file_str(solcfg[0])
             sol_cfg1 = ff_dir + '/' + sol_cfg
@@ -405,13 +458,12 @@ def edit_sh_files(workdir,cont_run,biomass,inp_type,polycfg,\
                         + ' -box ' + str(dim) + ' ' + str(dim) + ' '\
                         + str(dim) + '\n'
 
-            dim += 3 # arbitrary 3 nm
+            dim += 1 # arbitrary 1 nm
             solv_str2 = solv_js + ' -cp ' +'solv_' +poly_cfg +' -cs '\
                         + sol_cfg2 + ' -p ' + top_fyle + ' -o ' + \
                         'cosolv_'+ poly_cfg +' -maxsol '+str(nwater)\
                         + ' -box ' + str(dim) + ' ' + str(dim) + ' '\
                         + str(dim) + '\n'
-            fin_conf  = 'cosolv_' + poly_cfg
 
         # edit pp_fyle
         py_fname = pp_fyle
@@ -441,6 +493,7 @@ def edit_sh_files(workdir,cont_run,biomass,inp_type,polycfg,\
     fr  = open(py_fname,'r')
     fw  = open(rev_fname,'w')
     fid = fr.read().replace("py_jobname",jname).\
+          replace("py_indexfyle",indx_fyle).\
           replace("py_topol",top_fyle).\
           replace("py_finconf",fin_conf)
     fw.write(fid)
