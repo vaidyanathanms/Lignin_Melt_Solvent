@@ -25,7 +25,7 @@ mkdir -p trajfiles
 ftc_grp=./tcgrp_indx.ndx
 if ! test -f "$ftc_grp"; then
 	echo "begin generating tempearture coupling groups.."
-	# generate enermin files
+	# generate temperature_coupling files
 	jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi select -s py_finconf -sf py_indexfyle -on tcgrp_indx.ndx
 	
 fi

@@ -22,10 +22,10 @@ mkdir -p outdir
 mkdir -p trajfiles
 
 #---------------------------------------------------------Generate initial files----------------------------------
-ftc_grp=./tcgrp_indx.ndx.
+ftc_grp=./tcgrp_indx.ndx
 if ! test -f "$ftc_grp"; then
 	echo "begin generating tempearture coupling groups.."
-	# generate enermin files
+	# generate temp_coupling files
 	jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi select -s initconf.gro -sf tcgrp_inp.txt -on tcgrp_indx.ndx
 	
 fi

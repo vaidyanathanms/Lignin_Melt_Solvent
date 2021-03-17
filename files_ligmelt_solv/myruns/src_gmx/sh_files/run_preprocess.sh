@@ -19,6 +19,7 @@ echo "begin job.."
 echo $PWD
 
 mkdir -p initdir
+mkdir -p outdir
 
 # editconf box
 jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi editconf -f WT.pdb -bt cubic -d 1.0 -o WTbox.pdb
@@ -28,6 +29,12 @@ wait
 jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi grompp -f minim.mdp -p switchgrass_nch_30.top -c WTbox.pdb -o enermin.tpr
 wait
 
+echo "begin generating tempearture coupling groups.."
+# generate temp_coupling files
+jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi select -s initconf.gro -sf tcgrp_inp.txt -on tcgrp_indx.ndx
+wait
+
 cp *.pdb initdir/
 cp *.psf initdir/
 cp *.top initdir/
+cp tcgrp* initdir/
