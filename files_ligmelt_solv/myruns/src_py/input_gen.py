@@ -11,6 +11,7 @@ import re
 import shutil
 import glob
 import math
+import subprocess
 from make_gmx_inputs import * # function definitions
 #------------------------------------------------------------------
 
@@ -31,17 +32,18 @@ else:
 inp_type  = 'cosolvents' # melts, solvents, cosolvents
 biomass   = 'WT' # name of the biomass type
 disperse  = 'mono' # mono/poly; only for melts
-run_arr   = [2,3] # number of independent runs for a given biomass
+run_arr   = [2] # number of independent runs for a given biomass
 otyp_arr  = ['EOH','THF','GVL']  # solvent arr for solvents/cosolvents
 oname_arr = otyp_arr # change if prefix is different from name in PDB
 wtyp_arr  = ['tip3p','tip3p','tip3p'] # water arr type
 wname_arr = ['TIP3_','TIP3_','TIP3_'] # diff from prefix
-temp_arr  = [493,413,393] # temperature array
+temp_arr  = [463,413,393] # temperature array
 norg_arr  = [2492,1269,1462] # number of organic solvents
 nwat_arr  = [4063,5079,2032] # number of water molecules (for cosolvents)
+box_arr   = [11,11,13] # box size for solvent only. cosolvent=+1
 nchains   = 1     # number of polymer chains
 npoly_res = 22  # number of polymer residues
-box_dim   = 13 # box size for solvent only. cosolvent=+1
+
 #------------------------------------------------------------------
 
 # Directory Paths
@@ -74,7 +76,7 @@ sh_rep_fyl = ['repeat_all.sh','repeat_md.sh']
 if inp_type == 'cosolvents':
     check_arr_dim(len(otyp_arr),len(oname_arr),len(wtyp_arr),\
                   len(wname_arr),len(norg_arr), len(nwat_arr),\
-                  len(temp_arr))
+                  len(temp_arr),len(box_arr))
     solv_len = len(otyp_arr)
 elif inp_type == 'melts':
     solv_len = 0
@@ -84,9 +86,9 @@ elif inp_type == 'melts':
 for inp_val in range(solv_len): # loop in solvents
 
     o_sol_typ,solv_name,wat_type,wat_name,n_orgsolv,nwater,\
-        ref_temp = assign_vals(otyp_arr,oname_arr,wtyp_arr,wname_arr\
-                             ,norg_arr,nwat_arr,temp_arr,inp_type,\
-                             inp_val)
+        ref_temp,box_dim = assign_vals(otyp_arr,oname_arr,wtyp_arr,\
+                                       wname_arr,norg_arr,nwat_arr,\
+                                       box_arr,temp_arr,inp_type,inp_val)
 
     for casenum in range(len(run_arr)): # loop in runarr
 
@@ -156,9 +158,9 @@ for inp_val in range(solv_len): # loop in solvents
                                                   sol_top,sol_itp,workdir1)
 
         # Copy all shell script for running
-        for fsh_name in sh_rep_fyl:
-            if not os.path.exists(workdir1 + '/' + fsh_name):
-                gencpy(sh_dir,workdir1,fsh_name)
+#        for fsh_name in sh_rep_fyl:
+#           if not os.path.exists(workdir1 + '/' + fsh_name):
+#                gencpy(sh_dir,workdir1,fsh_name)
 
         # Change to working directory
         os.chdir(workdir1)
@@ -187,8 +189,10 @@ for inp_val in range(solv_len): # loop in solvents
 
         # Submit preprocess job
 #        if not os.path.exists('/*.tpr'):
+#            subprocess.call(["chmod", "777", "repeat_all.sh"])
 #            subprocess.call(["./repeat_all.sh"])
 #        else:
+#            subprocess.call(["chmod", "777", "repeat_md.sh"])
 #            subprocess.call(["./repeat_md.sh"])
         # Write end of loop and return directory handle to main directory
         print( "End of run number: ", run_arr[casenum])

@@ -11,6 +11,7 @@ import shutil
 import glob
 import math
 import fileinput
+import subprocess
 #------------------------------------------------------------------
 
 # General copy script
@@ -27,15 +28,17 @@ def gencpy(dum_maindir,dum_destdir,fylname):
 #------------------------------------------------------------------
 
 # Check consistency of input dimensions
-def check_arr_dim(ot_len,on_len,wt_len,wn_len,no_len,nw_len,tlen):
+def check_arr_dim(ot_len,on_len,wt_len,wn_len,no_len,nw_len,tlen\
+                  ,blen):
     if ot_len != on_len or ot_len != wt_len or ot_len != wn_len or \
-       ot_len != no_len or ot_len != nw_len or ot_len != tlen:
+       ot_len != no_len or ot_len != nw_len or ot_len != tlen \
+                 or ot_len != blen:
         raise RuntimeError('Unequal input lengths')
 #------------------------------------------------------------------
 
 # Assign input values
 def assign_vals(otyp_arr,oname_arr,wtyp_arr,wname_arr,norg_arr,\
-                nwat_arr,temp_arr,inp_type,ival):
+                nwat_arr,box_arr,temp_arr,inp_type,ival):
 
     if inp_type == 'melts':
         o_sol_typ = 'None' 
@@ -45,6 +48,7 @@ def assign_vals(otyp_arr,oname_arr,wtyp_arr,wname_arr,norg_arr,\
         n_orgsolv = 0
         nwater = 0
         ref_temp = temp_arr[ival]
+        box_dim  = box_arr[ival]
     elif inp_type == 'cosolvents':
         o_sol_typ = otyp_arr[ival]
         solv_name = oname_arr[ival]
@@ -53,6 +57,7 @@ def assign_vals(otyp_arr,oname_arr,wtyp_arr,wname_arr,norg_arr,\
         n_orgsolv = norg_arr[ival]
         nwater    = nwat_arr[ival]
         ref_temp  = temp_arr[ival]
+        box_dim   = box_arr[ival]
     elif inp_type == 'solvents':
         o_sol_typ = otyp_arr[ival]
         solv_name = oname_arr[ival]
@@ -61,10 +66,10 @@ def assign_vals(otyp_arr,oname_arr,wtyp_arr,wname_arr,norg_arr,\
         n_orgsolv = norg_arr[ival]
         nwater    = 0
         ref_temp  = temp_arr[ival]
-
+        box_dim   = box_arr[ival]
 
     return o_sol_typ,solv_name,wat_type,wat_name,n_orgsolv,\
-        nwater,ref_temp
+        nwater,ref_temp,box_dim
 #------------------------------------------------------------------
 
 # Set working directory
@@ -166,12 +171,13 @@ def create_indxgrps(destdir,inp_type,npoly_res,solv_name,wat_name):
     if inp_type == 'melts':
         tc_str = 'System'
     elif inp_type == 'solvents':
-        tc_str = 'resnr_1_to_'+ str(npoly_res)
-        tc_str = tc_str + ';  ' + 'resname_' + solv_name
+        tc_str = 'resnr 1 to '+ str(npoly_res)
+        tc_str = tc_str + '; ' + 'resname ' + solv_name + '\n'
     elif inp_type == 'cosolvents':
-        tc_str = 'resnr_1_to_'+ str(npoly_res)
-        tc_str = tc_str + ';  ' + 'resname_' + solv_name
-        tc_str = tc_str + ';  ' + 'resname_' + wat_name
+        tc_str = 'resnr 1 to '+ str(npoly_res)
+        tc_str = tc_str + '; ' + 'resname ' + solv_name
+        tc_str = tc_str + '; ' + 'resname ' + \
+                 wat_name.split('_')[0] + '\n'
     
     with open(destdir+'/'+tcgrp_fname,'w') as fw:
         fw.write(tc_str)
@@ -443,7 +449,7 @@ def edit_sh_files(workdir,cont_run,biomass,inp_type,polycfg,\
             sol_cfg1 = ff_dir + '/' + sol_cfg
             solv_str1 = solv_js + ' -cp ' + poly_cfg + ' -cs ' + \
                         sol_cfg1 + ' -p ' + top_fyle + ' -o ' + \
-                        'solv_'+ poly_cfg + ' -maxsol ' + str(nsolv)\
+                        fin_conf + ' -maxsol ' + str(nsolv)\
                         + ' -box ' + str(dim) + ' ' + str(dim) + ' '\
                         + str(dim) + '\n'
             solv_str2 = '# no cosolvation'
@@ -461,7 +467,7 @@ def edit_sh_files(workdir,cont_run,biomass,inp_type,polycfg,\
             dim += 1 # arbitrary 1 nm
             solv_str2 = solv_js + ' -cp ' +'solv_' +poly_cfg +' -cs '\
                         + sol_cfg2 + ' -p ' + top_fyle + ' -o ' + \
-                        'cosolv_'+ poly_cfg +' -maxsol '+str(nwater)\
+                        fin_conf +' -maxsol '+str(nwater)\
                         + ' -box ' + str(dim) + ' ' + str(dim) + ' '\
                         + str(dim) + '\n'
 
@@ -476,6 +482,7 @@ def edit_sh_files(workdir,cont_run,biomass,inp_type,polycfg,\
               replace("py_solvate_1",solv_str1).\
               replace("py_solvate_2", solv_str2).\
               replace("py_topol",top_fyle).\
+              replace("py_indexfyle",indx_fyle).\
               replace("py_finconf",fin_conf)
         fw.write(fid)
         fr.close(); fw.close()
