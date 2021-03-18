@@ -114,6 +114,40 @@ else
         cp confout_npt_main.gro trajfiles/confout_npt_main.gro
 fi
 wait
+#-----------------------------------High Temperature NVT----------------------------------------------------------------------------
+
+fnvthigh_inp=./nvt_high.tpr 
+if ! test -f "$fnvthigh_inp"; then
+
+	echo "begin generating high temperature NVT: nvt_high.tpr.."
+	# generate nvt_high files
+	jsrun -X 1 -n 1 -c 7 -a 1 -g 1 --launch_distribution plane:1 -b packed:7 gmx_mpi grompp -f nvt_high.mdp -c confout_npt_main.gro -p py_topol -n tcgrp_indx.ndx -o nvt_high.tpr
+	wait
+
+	echo "begin running high temperature NVT: nvt_high.tpr.."
+	# run nvt_high.tpr
+	jsrun -X 1 -n 1 -c 42 -a 6 -g 6 --launch_distribution plane:6 -b packed:7 gmx_mpi mdrun -s nvt_high.tpr -cpo state_nvt_high.cpt -cpi state_nvt_high.cpt -cpt 5 -g md_nvt_high.log -o traj_nvt_high.trr -e ener_nvt_high.edr -c confout_nvt_high.gro -pme gpu -npme 1 -nb gpu -bonded gpu -pin off -maxh 1.75
+	wait
+
+
+	cp md_nvt_high.log trajfiles/md_nvt_high.log
+	cp traj_nvt_high.trr trajfiles/traj_nvt_high.trr
+	cp ener_nvt_high.edr trajfiles/ener_nvt_high.edr
+	cp confout_nvt_high.gro trajfiles/confout_nvt_high.gro
+else
+
+        echo "begin running high temperature NVT: nvt_high.tpr.."
+        # run nvt_high.tpr
+        jsrun -X 1 -n 1 -c 42 -a 6 -g 6 --launch_distribution plane:6 -b packed:7 gmx_mpi mdrun -s nvt_high.tpr -cpo state_nvt_high.cpt -cpi state_nvt_high.cpt -cpt 5 -g md_nvt_high.log -o traj_nvt_high.trr -e ener_nvt_high.edr -c confout_nvt_high.gro -pme gpu -npme 1 -nb gpu -bonded gpu -pin off -maxh 1.75
+        wait
+
+
+        cp md_nvt_high.log trajfiles/md_nvt_high.log
+        cp traj_nvt_high.trr trajfiles/traj_nvt_high.trr
+        cp ener_nvt_high.edr trajfiles/ener_nvt_high.edr
+        cp confout_nvt_high.gro trajfiles/confout_nvt_high.gro
+fi
+wait
 #------------------------------------------------------------------------------------------------------------------------------------
 
 echo "End of run.."

@@ -29,10 +29,11 @@ else:
 #------------------------------------------------------------------
 
 # Input Data
+run_all   = 1 # 1-copy files and run, 0-NO run (copies files)
 inp_type  = 'cosolvents' # melts, solvents, cosolvents
 biomass   = 'WT' # name of the biomass type
 disperse  = 'mono' # mono/poly; only for melts
-run_arr   = [2] # number of independent runs for a given biomass
+run_arr   = [3] # number of independent runs for a given biomass
 otyp_arr  = ['EOH','THF','GVL']  # solvent arr for solvents/cosolvents
 oname_arr = otyp_arr # change if prefix is different from name in PDB
 wtyp_arr  = ['tip3p','tip3p','tip3p'] # water arr type
@@ -158,9 +159,9 @@ for inp_val in range(solv_len): # loop in solvents
                                                   sol_top,sol_itp,workdir1)
 
         # Copy all shell script for running
-#        for fsh_name in sh_rep_fyl:
-#           if not os.path.exists(workdir1 + '/' + fsh_name):
-#                gencpy(sh_dir,workdir1,fsh_name)
+        for fsh_name in sh_rep_fyl:
+           if not os.path.exists(workdir1 + '/' + fsh_name):
+                gencpy(sh_dir,workdir1,fsh_name)
 
         # Change to working directory
         os.chdir(workdir1)
@@ -188,12 +189,14 @@ for inp_val in range(solv_len): # loop in solvents
                               indx_fyle)
 
         # Submit preprocess job
-#        if not os.path.exists('/*.tpr'):
-#            subprocess.call(["chmod", "777", "repeat_all.sh"])
-#            subprocess.call(["./repeat_all.sh"])
-#        else:
-#            subprocess.call(["chmod", "777", "repeat_md.sh"])
-#            subprocess.call(["./repeat_md.sh"])
+        if run_all:
+            if not os.path.exists('/*.tpr'):
+                subprocess.call(["chmod", "777", "repeat_all.sh"])
+                subprocess.call(["./repeat_all.sh"])
+            else:
+                subprocess.call(["chmod", "777", "repeat_md.sh"])
+                subprocess.call(["./repeat_md.sh"])
+
         # Write end of loop and return directory handle to main directory
         print( "End of run number: ", run_arr[casenum])
         os.chdir(main_dir)# current dir

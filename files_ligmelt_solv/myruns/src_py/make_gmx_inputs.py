@@ -29,16 +29,16 @@ def gencpy(dum_maindir,dum_destdir,fylname):
 
 # Check consistency of input dimensions
 def check_arr_dim(ot_len,on_len,wt_len,wn_len,no_len,nw_len,tlen\
-                  ,blen):
+                  ,hi_tlen,blen):
     if ot_len != on_len or ot_len != wt_len or ot_len != wn_len or \
        ot_len != no_len or ot_len != nw_len or ot_len != tlen \
-                 or ot_len != blen:
+                 or ot_len != hi_tlen or ot_len != blen:
         raise RuntimeError('Unequal input lengths')
 #------------------------------------------------------------------
 
 # Assign input values
 def assign_vals(otyp_arr,oname_arr,wtyp_arr,wname_arr,norg_arr,\
-                nwat_arr,box_arr,temp_arr,inp_type,ival):
+                nwat_arr,box_arr,temp_arr,hi_t_arr,inp_type,ival):
 
     if inp_type == 'melts':
         o_sol_typ = 'None' 
@@ -48,6 +48,7 @@ def assign_vals(otyp_arr,oname_arr,wtyp_arr,wname_arr,norg_arr,\
         n_orgsolv = 0
         nwater = 0
         ref_temp = temp_arr[ival]
+        hi_ref_t = hi_t_arr[ival]
         box_dim  = box_arr[ival]
     elif inp_type == 'cosolvents':
         o_sol_typ = otyp_arr[ival]
@@ -57,6 +58,7 @@ def assign_vals(otyp_arr,oname_arr,wtyp_arr,wname_arr,norg_arr,\
         n_orgsolv = norg_arr[ival]
         nwater    = nwat_arr[ival]
         ref_temp  = temp_arr[ival]
+        hi_ref_t = hi_t_arr[ival]
         box_dim   = box_arr[ival]
     elif inp_type == 'solvents':
         o_sol_typ = otyp_arr[ival]
@@ -66,10 +68,11 @@ def assign_vals(otyp_arr,oname_arr,wtyp_arr,wname_arr,norg_arr,\
         n_orgsolv = norg_arr[ival]
         nwater    = 0
         ref_temp  = temp_arr[ival]
+        hi_ref_t  = hi_t_arr[ival]
         box_dim   = box_arr[ival]
 
     return o_sol_typ,solv_name,wat_type,wat_name,n_orgsolv,\
-        nwater,ref_temp,box_dim
+        nwater,ref_temp,hi_ref_t,box_dim
 #------------------------------------------------------------------
 
 # Set working directory
@@ -94,6 +97,7 @@ def couple_coeff(inp_type,coeff_fyle = 'None'):
 
     ref_pres = 1
     tau_temp_nvt     = 0.1
+    tau_temp_nvthigh = 0.2
     tau_temp_berend  = 0.1
     tau_temp_parrah  = 0.2
     tau_pres_berend  = 0.5
@@ -111,6 +115,8 @@ def couple_coeff(inp_type,coeff_fyle = 'None'):
                 words = line.split()
                 if words[0] == 'TauTemp_NVT':
                     tau_temp_nvt  = float(words[1])
+                elif words[0] == 'TauTempHigh_NVT':
+                    tau_temp_nvthigh  = float(words[1])
                 elif words[0] == 'TauTemp_Berendsen':
                     tau_temp_berend = float(words[1])
                 elif words[0] == 'TauPres_Berendsen':
@@ -126,8 +132,9 @@ def couple_coeff(inp_type,coeff_fyle = 'None'):
                 else:
                     raise RuntimeError("Unknown keyword: "+ words[0] \
                                        + " in " + str(coeff_fyle))
-    return tau_temp_nvt,tau_temp_berend, tau_temp_parrah, \
-        tau_pres_berend,tau_pres_parrah,ref_pres,melt_topname
+    return tau_temp_nvt,tau_temp_nvthigh,tau_temp_berend,\
+        tau_temp_parrah,tau_pres_berend,tau_pres_parrah,ref_pres,\
+        melt_topname
 #------------------------------------------------------------------
 
 #Check pdb/psf/top files for the melt (or polymer)
@@ -203,19 +210,21 @@ def create_tcgrps(inp_type,npoly_res,solv_name,wat_name):
 
 # Check for mdp files and copy/edit if not present
 def check_cpy_mdp_files(srcdir,destdir,mdp_fyles,inp_type,Tetau_nvt\
-                        ,Tetau_berend,Tetau_parrah,Prtau_berend,\
-                        Prtau_parrah,ref_temp,ref_pres,tc_grpdata,\
-                        tc_grptype,headdir,coeff_fyle='None'):
+                        ,Tetau_highnvt,Tetau_berend,Tetau_parrah,\
+                        Prtau_berend,Prtau_parrah,ref_temp,hi_ref_t,\
+                        ref_pres,tc_grpdata,tc_grptype,headdir,coeff_fyle):
 
     if coeff_fyle != 'None': #gmx inp file from sys.argv
         print("copying", coeff_fyle)
         gencpy(headdir,destdir,coeff_fyle)
 
     # Only temperatures need to have multiple coupling groups
-    str_Tetau_nvt = genstr(inp_type,Tetau_nvt)
-    str_Tetau_ber = genstr(inp_type,Tetau_berend)
-    str_Tetau_par = genstr(inp_type,Tetau_parrah)
-    str_temp = genstr(inp_type,ref_temp)
+    str_Tetau_nvt   = genstr(inp_type,Tetau_nvt)
+    str_Tetau_hinvt = genstr(inp_type,Tetau_highnvt)
+    str_Tetau_ber   = genstr(inp_type,Tetau_berend)
+    str_Tetau_par   = genstr(inp_type,Tetau_parrah)
+    str_temp        = genstr(inp_type,ref_temp)
+    str_hi_temp     = genstr(inp_type,hi_ref_t)
 
     for mdp_fname in mdp_fyles:
         if not os.path.exists(srcdir + '/' + mdp_fname):
@@ -228,11 +237,13 @@ def check_cpy_mdp_files(srcdir,destdir,mdp_fyles,inp_type,Tetau_nvt\
         fid = fr.read().replace("py_tcgrps",tc_grpdata).\
               replace("py_grptype",tc_grptype).\
               replace("py_Temptau_vr",str_Tetau_nvt).\
+              replace("py_HighTemptau_vr",str_Tetau_hinvt).\
               replace("py_Temptau_Berend", str_Tetau_ber).\
               replace("py_Temptau_ParRah",str_Tetau_par).\
               replace("py_Prestau_Berend",str(Prtau_berend)).\
               replace("py_Prestau_ParRah",str(Prtau_parrah)).\
               replace("py_ref_t",str_temp).\
+              replace("py_Highref_t",str_hi_temp).\
               replace("py_ref_p",str(ref_pres))
         fw.write(fid)
         fw.close()

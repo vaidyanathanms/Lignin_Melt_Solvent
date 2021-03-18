@@ -38,7 +38,8 @@ otyp_arr  = ['EOH','THF','GVL']  # solvent arr for solvents/cosolvents
 oname_arr = otyp_arr # change if prefix is different from name in PDB
 wtyp_arr  = ['tip3p','tip3p','tip3p'] # water arr type
 wname_arr = ['TIP3_','TIP3_','TIP3_'] # diff from prefix
-temp_arr  = [463,413,393] # temperature array
+temp_arr  = [300,300,300] # NPT equilibration
+hi_t_arr  = [463,413,393] # high temperature array
 norg_arr  = [2492,1269,1462] # number of organic solvents
 nwat_arr  = [4063,5079,2032] # number of water molecules (for cosolvents)
 box_arr   = [11,11,13] # box size for solvent only. cosolvent=+1
@@ -67,7 +68,8 @@ if not os.path.isdir(scr_dir):
 
 # Required GMX/sh Files
 mdp_fyles  = ['minim_pyinp.mdp','nvt_pyinp.mdp',\
-              'npt_berendsen_pyinp.mdp','npt_main_pyinp.mdp']
+              'npt_berendsen_pyinp.mdp','npt_main_pyinp.mdp',\
+              'nvthigh_pyinp.mdp']
 sh_md_fyle = 'run_md_pyinp.sh'
 sh_pp_fyle = 'run_preprocess_pyinp.sh'
 sh_rep_fyl = ['repeat_all.sh','repeat_md.sh']
@@ -77,7 +79,7 @@ sh_rep_fyl = ['repeat_all.sh','repeat_md.sh']
 if inp_type == 'cosolvents':
     check_arr_dim(len(otyp_arr),len(oname_arr),len(wtyp_arr),\
                   len(wname_arr),len(norg_arr), len(nwat_arr),\
-                  len(temp_arr),len(box_arr))
+                  len(temp_arr),len(hi_t_arr),len(box_arr))
     solv_len = len(otyp_arr)
 elif inp_type == 'melts':
     solv_len = 0
@@ -87,9 +89,12 @@ elif inp_type == 'melts':
 for inp_val in range(solv_len): # loop in solvents
 
     o_sol_typ,solv_name,wat_type,wat_name,n_orgsolv,nwater,\
-        ref_temp,box_dim = assign_vals(otyp_arr,oname_arr,wtyp_arr,\
-                                       wname_arr,norg_arr,nwat_arr,\
-                                       box_arr,temp_arr,inp_type,inp_val)
+        ref_temp,hi_ref_t,box_dim = assign_vals(otyp_arr,oname_arr,\
+                                                wtyp_arr,wname_arr,\
+                                                norg_arr,nwat_arr,\
+                                                box_arr,temp_arr,\
+                                                hi_t_arr,inp_type,\
+                                                inp_val)
 
     for casenum in range(len(run_arr)): # loop in runarr
 
@@ -124,8 +129,9 @@ for inp_val in range(solv_len): # loop in solvents
         workdir1 = set_working_dir(rundir,inp_type,o_sol_typ)
 
         # Set thermostat/top variables (change if there is a temp sweep)
-        Tetau_nvt,Tetau_berend,Tetau_parrah,Prtau_berend,Prtau_parrah,\
-            ref_pres,melt_topname = couple_coeff(inp_type,coeff_fyle)
+        Tetau_nvt,Tetau_highnvt,Tetau_berend,Tetau_parrah,Prtau_berend,\
+            Prtau_parrah,ref_pres,melt_topname=couple_coeff(inp_type,\
+                                                            coeff_fyle)
 
         # Check for pdb/psf/top files of the melt/polymer
         poly_conffile,poly_topfile=check_inp_files(workdir1,melt_topname)
@@ -138,9 +144,9 @@ for inp_val in range(solv_len): # loop in solvents
 
         # Copy and edit mdp files
         check_cpy_mdp_files(mdp_dir,workdir1,mdp_fyles,inp_type,Tetau_nvt\
-                            ,Tetau_berend,Tetau_parrah,Prtau_berend,\
-                            Prtau_parrah,ref_temp,ref_pres,tc_grp,tc_typ,\
-                            main_dir,coeff_fyle)
+                            ,Tetau_highnvt,Tetau_berend,Tetau_parrah,\
+                            Prtau_berend,Prtau_parrah,ref_temp,hi_ref_t,\
+                            ref_pres,tc_grp,tc_typ,main_dir,coeff_fyle)
         cont_run,edit_sh_fyle = cpy_sh_files(sh_dir,workdir1,\
                                              sh_pp_fyle,sh_md_fyle)
 
