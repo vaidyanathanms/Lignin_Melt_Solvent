@@ -265,12 +265,10 @@ def genstr(inp_type,inp_vals):
 # Copy shell script files
 def cpy_sh_files(srcdir,destdir,sh_pp_fyle,sh_md_fyle):
 
-    edit_sh_fyle = 0
     # Check for tpr files to provide run conditions
     if glob.glob(destdir+'/*.tpr') == []:
         print('No tpr files found. Beginning new runs..')
         continue_run = 0
-        edit_sh_fyle = 1
     else:
         print('tpr files found. Continuing runs..')
         continue_run = 1
@@ -289,13 +287,10 @@ def cpy_sh_files(srcdir,destdir,sh_pp_fyle,sh_md_fyle):
 
     if continue_run == 1: #at least one tpr file present
         sh_mdrun = sh_md_fyle.replace('_pyinp','')
-        if not os.path.exists(destdir+'/' + sh_mdrun):
-            print("WARNING: ", sh_mdrun," not found in ",destdir)
-            print("Recopying ", sh_md_fyle)
-            edit_sh_fyle = 1
-            gencpy(srcdir,destdir,sh_md_fyle)
-            
-    return continue_run, edit_sh_fyle
+        print("Recopying ", sh_md_fyle)
+        gencpy(srcdir,destdir,sh_md_fyle)
+
+    return continue_run
 #------------------------------------------------------------------
 
 # Create forcefield directory
@@ -429,10 +424,10 @@ def edit_main_top_file(main_topfyle,ff,top_arr,itp_arr,workdir):
     return edited_file
 #------------------------------------------------------------------
 
-# Edit shell script files
-def edit_sh_files(workdir,cont_run,biomass,inp_type,polycfg,\
-                  nsolv,nwater,topfyle,o_sol_type,wat_typ,pp_fyle\
-                  ,md_fyle,ffdir,solcfg,dim,indx_fyle):
+# Edit pre-processing shell script files
+def edit_pp_files(biomass,inp_type,polycfg,nsolv,nwater,\
+                  topfyle,o_sol_type,wat_typ,pp_fyle,ffdir,\
+                  solcfg,dim,indx_fyle):
 
     # use the last element (others correspond to full path)
     # underscored variable corresponds to split file name
@@ -440,71 +435,87 @@ def edit_sh_files(workdir,cont_run,biomass,inp_type,polycfg,\
     poly_cfg = ret_file_str(polycfg)
     ff_dir   = ret_file_str(ffdir)
 
-    if cont_run == 0:
-        # job/box name
-        jname = 'pp_'+ biomass
-        if inp_type == 'solvents' or inp_type == 'cosolvents':
-            jname = jname + '_' + o_sol_type #py_jobname
-        box_conffyle = "boxedit_" + poly_cfg
-        fin_conf = 'initconf.gro' # in gro format
-        
-        # solvate commands
-        solv_js = 'jsrun -X 1 -n 1 -c 7 -a 1 -g 1 ' + \
-                  '--launch_distribution plane:1 ' + \
-                  '-b packed:7 gmx_mpi solvate'
-        if inp_type == 'melts':
-            solv_str1 = '# no solvation'
-            solv_str2 = '# no cosolvation'
-        elif inp_type == 'solvents':
-            sol_cfg  = ret_file_str(solcfg[0])
-            sol_cfg1 = ff_dir + '/' + sol_cfg
-            solv_str1 = solv_js + ' -cp ' + poly_cfg + ' -cs ' + \
-                        sol_cfg1 + ' -p ' + top_fyle + ' -o ' + \
-                        fin_conf + ' -maxsol ' + str(nsolv)\
-                        + ' -box ' + str(dim) + ' ' + str(dim) + ' '\
-                        + str(dim) + '\n'
-            solv_str2 = '# no cosolvation'
-        elif inp_type == 'cosolvents':
-            sol_cfg  = ret_file_str(solcfg[0])
-            sol_cfg1 = ff_dir + '/' + sol_cfg
-            sol_cfg  = ret_file_str(solcfg[1])
-            sol_cfg2 = ff_dir + '/' + sol_cfg
-            solv_str1 = solv_js + ' -cp ' + poly_cfg + ' -cs ' + \
-                        sol_cfg1 + ' -p ' + top_fyle + ' -o ' + \
-                        'solv_'+ poly_cfg + ' -maxsol ' + str(nsolv)\
-                        + ' -box ' + str(dim) + ' ' + str(dim) + ' '\
-                        + str(dim) + '\n'
+    # job/box name
+    jname = 'pp_'+ biomass
+    if inp_type == 'solvents' or inp_type == 'cosolvents':
+        jname = jname + '_' + o_sol_type #py_jobname
+    box_conffyle = "boxedit_" + poly_cfg
+    fin_conf = 'initconf.gro' # in gro format
 
-            dim += 1 # arbitrary 1 nm
-            solv_str2 = solv_js + ' -cp ' +'solv_' +poly_cfg +' -cs '\
-                        + sol_cfg2 + ' -p ' + top_fyle + ' -o ' + \
-                        fin_conf +' -maxsol '+str(nwater)\
-                        + ' -box ' + str(dim) + ' ' + str(dim) + ' '\
-                        + str(dim) + '\n'
+    # solvate commands
+    solv_js = 'jsrun -X 1 -n 1 -c 7 -a 1 -g 1 ' + \
+              '--launch_distribution plane:1 ' + \
+              '-b packed:7 gmx_mpi solvate'
+    if inp_type == 'melts':
+        solv_str1 = '# no solvation'
+        solv_str2 = '# no cosolvation'
+    elif inp_type == 'solvents':
+        sol_cfg  = ret_file_str(solcfg[0])
+        sol_cfg1 = ff_dir + '/' + sol_cfg
+        solv_str1 = solv_js + ' -cp ' + poly_cfg + ' -cs ' + \
+                    sol_cfg1 + ' -p ' + top_fyle + ' -o ' + \
+                    fin_conf + ' -maxsol ' + str(nsolv)\
+                    + ' -box ' + str(dim) + ' ' + str(dim) + ' '\
+                    + str(dim) + '\n'
+        solv_str2 = '# no cosolvation'
+    elif inp_type == 'cosolvents':
+        sol_cfg  = ret_file_str(solcfg[0])
+        sol_cfg1 = ff_dir + '/' + sol_cfg
+        sol_cfg  = ret_file_str(solcfg[1])
+        sol_cfg2 = ff_dir + '/' + sol_cfg
+        solv_str1 = solv_js + ' -cp ' + poly_cfg + ' -cs ' + \
+                    sol_cfg1 + ' -p ' + top_fyle + ' -o ' + \
+                    'solv_'+ poly_cfg + ' -maxsol ' + str(nsolv)\
+                    + ' -box ' + str(dim) + ' ' + str(dim) + ' '\
+                    + str(dim) + '\n'
 
-        # edit pp_fyle
-        py_fname = pp_fyle
-        rev_fname = py_fname.replace('_pyinp','')
-        fr  = open(py_fname,'r')
-        fw  = open(rev_fname,'w')
-        fid = fr.read().replace("py_jobname",jname).\
-              replace("py_meltconf",poly_cfg).\
-              replace("py_boxmeltconf",box_conffyle).\
-              replace("py_solvate_1",solv_str1).\
-              replace("py_solvate_2", solv_str2).\
-              replace("py_topol",top_fyle).\
-              replace("py_indexfyle",indx_fyle).\
-              replace("py_finconf",fin_conf)
-        fw.write(fid)
-        fr.close(); fw.close()
+        dim += 1 # arbitrary 1 nm
+        solv_str2 = solv_js + ' -cp ' +'solv_' +poly_cfg +' -cs '\
+                    + sol_cfg2 + ' -p ' + top_fyle + ' -o ' + \
+                    fin_conf +' -maxsol '+str(nwater)\
+                    + ' -box ' + str(dim) + ' ' + str(dim) + ' '\
+                    + str(dim) + '\n'
 
-    # since edit_sh_fyle is true, the run_md_file is recopied
-    # editing run_md_file
+    # edit pp_fyle
+    py_fname = pp_fyle
+    rev_fname = py_fname.replace('_pyinp','')
+    fr  = open(py_fname,'r')
+    fw  = open(rev_fname,'w')
+    fid = fr.read().replace("py_jobname",jname).\
+          replace("py_meltconf",poly_cfg).\
+          replace("py_boxmeltconf",box_conffyle).\
+          replace("py_solvate_1",solv_str1).\
+          replace("py_solvate_2", solv_str2).\
+          replace("py_topol",top_fyle).\
+          replace("py_indexfyle",indx_fyle).\
+          replace("py_finconf",fin_conf)
+    fw.write(fid)
+    fr.close(); fw.close()
+
+#------------------------------------------------------------------
+
+# returns the last element file string after stripping "/"
+def ret_file_str(inpstr):
+    spl_str = inpstr.split("/")
+    return spl_str[len(spl_str)-1]
+#------------------------------------------------------------------
+
+# Edit run_md.sh file all times
+def edit_md_files(biomass,inp_type,polycfg,topfyle,o_sol_type\
+                  ,md_fyle,indx_fyle):
+
+    # use the last element (others correspond to full path)
+    # underscored variable corresponds to split file name
+    top_fyle = ret_file_str(topfyle)
+    poly_cfg = ret_file_str(polycfg)
+
+    # edit run_md_file always
     # job/box name
     jname = 'md_'+ biomass
     if inp_type == 'solvents' or inp_type == 'cosolvents':
         jname = jname + '_' + o_sol_type #py_jobname
 
+    fin_conf = 'initconf.gro' # in gro format
     # edit pp_fyle
     py_fname = md_fyle
     rev_fname = py_fname.replace('_pyinp','')
@@ -516,10 +527,4 @@ def edit_sh_files(workdir,cont_run,biomass,inp_type,polycfg,\
           replace("py_finconf",fin_conf)
     fw.write(fid)
     fr.close(); fw.close()
-#------------------------------------------------------------------
-
-# returns the last element file string after stripping "/"
-def ret_file_str(inpstr):
-    spl_str = inpstr.split("/")
-    return spl_str[len(spl_str)-1]
 #------------------------------------------------------------------
