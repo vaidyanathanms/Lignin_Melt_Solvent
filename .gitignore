@@ -5,3 +5,10 @@ hemicellulose/
 /init_codes
 /files_pnc_lignin
 files_ligmelt_solv/myruns/src_py/__pycache__*
+files_genplots/*
+files_genplots
+files_ligmelt_solv/myruns/src_py/__pycache__/*
+files_ligmelt_solv/myruns/src_py/__pycache__
+/files_ligmelt_solv/myruns/src_py/__pycache__
+files_misc/*
+files_misc

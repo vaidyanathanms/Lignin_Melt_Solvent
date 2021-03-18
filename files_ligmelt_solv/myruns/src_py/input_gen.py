@@ -69,7 +69,7 @@ if not os.path.isdir(scr_dir):
 # Required GMX/sh Files
 mdp_fyles  = ['minim_pyinp.mdp','nvt_pyinp.mdp',\
               'npt_berendsen_pyinp.mdp','npt_main_pyinp.mdp',\
-              'nvthigh_pyinp.mdp']
+              'nvt_high_pyinp.mdp']
 sh_md_fyle = 'run_md_pyinp.sh'
 sh_pp_fyle = 'run_preprocess_pyinp.sh'
 sh_rep_fyl = ['repeat_all.sh','repeat_md.sh']
