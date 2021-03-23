@@ -31,18 +31,18 @@ else:
 # Input Data
 run_all   = 1 # 1-copy files and run, 0-NO run (copies files)
 inp_type  = 'cosolvents' # melts, solvents, cosolvents
-biomass   = 'WT' # name of the biomass type
+biomass   = 'MYB' # name of the biomass type
 disperse  = 'mono' # mono/poly; only for melts
-run_arr   = [3] # number of independent runs for a given biomass
-otyp_arr  = ['THF','GVL']#['EOH']#,'THF','GVL']  # solvent arr for solvents/cosolvents
+run_arr   = [4,5,6] # number of independent runs for a given biomass
+otyp_arr  = ['EOH','THF','GVL']  # solvent arr for solvents/cosolvents
 oname_arr = otyp_arr # change if prefix is different from name in PDB
-wtyp_arr  = ['tip3p','tip3p']#,'tip3p'] # water arr type
-wname_arr = ['TIP3_','TIP3_']#,'TIP3_'] # diff from prefix
-temp_arr  = [300,300]#,300] # NPT equilibration
-hi_t_arr  = [413,393] #[463]#,413,393] # high temperature array
-norg_arr  = [1269,1462]#[2492]#,1269,1462] # number of organic solvents
-nwat_arr  = [5079,2032] #[4063]#,5079,2032] # number of water molecules (for cosolvents)
-box_arr   = [11,13] #[11]#,11,13] # box size for solvent only. cosolvent=+1
+wtyp_arr  = ['tip3p','tip3p','tip3p'] # water arr type
+wname_arr = ['TIP3_','TIP3_','TIP3_'] # diff from prefix
+temp_arr  = [300,300,300] # NPT equilibration
+hi_t_arr  = [463,413,393] # high temperature array
+norg_arr  = [2237,1187,1451] # number of organic solvents
+nwat_arr  = [4610,5330,2017] # number of water molecules (for cosolvents)
+box_arr   = [11,11,13] # box size for solvent only. cosolvent=+1
 nchains   = 1     # number of polymer chains
 npoly_res = 22  # number of polymer residues
 
@@ -66,13 +66,14 @@ if not os.path.isdir(scr_dir):
     os.mkdir(scr_dir)
 #------------------------------------------------------------------
 
-# Required GMX/sh Files
+# Required GMX/sh and default gro/top files
 mdp_fyles  = ['minim_pyinp.mdp','nvt_pyinp.mdp',\
               'npt_berendsen_pyinp.mdp','npt_main_pyinp.mdp',\
               'nvt_high_pyinp.mdp']
 sh_md_fyle = 'run_md_pyinp.sh'
 sh_pp_fyle = 'run_preprocess_pyinp.sh'
 sh_rep_fyl = ['repeat_all.sh','repeat_md.sh']
+def_inicon = 'initconf.gro'
 #------------------------------------------------------------------
 
 # Check input dimension consistency
@@ -98,7 +99,8 @@ for inp_val in range(solv_len): # loop in solvents
 
     for casenum in range(len(run_arr)): # loop in runarr
 
-        print( "Run number: ", run_arr[casenum])
+        print("Preparing initial conditions for: ", biomass,\
+              o_sol_typ, run_arr[casenum])
 
         # Make directories
         head_dir = scr_dir + '/' + inp_type
@@ -141,6 +143,7 @@ for inp_val in range(solv_len): # loop in solvents
                             ,Tetau_highnvt,Tetau_berend,Tetau_parrah,\
                             Prtau_berend,Prtau_parrah,ref_temp,hi_ref_t,\
                             ref_pres,tc_grp,tc_typ,main_dir,coeff_fyle)
+
         # Check for tpr files. Re-edit run_md.sh irrespective of
         # whether tpr files are found. Edit run_pp.sh iff cont_run = 0
         cont_run = cpy_sh_files(sh_dir,workdir1,sh_pp_fyle,sh_md_fyle)
@@ -195,6 +198,10 @@ for inp_val in range(solv_len): # loop in solvents
                 edit_pp_files(biomass,inp_type,poly_conffile,n_orgsolv\
                               ,nwater,poly_topedit,o_sol_typ,wat_type,\
                               sh_pp_fyle,ff_dir,sol_cfg,box_dim,indx_fyle)
+        else: # check for initconf.gro
+            if os.path.exists(def_inicon):
+                poly_conffile = def_inicon
+            
 
         # Edit run_md shell script files always
         edit_md_files(biomass,inp_type,poly_conffile,poly_topedit,\

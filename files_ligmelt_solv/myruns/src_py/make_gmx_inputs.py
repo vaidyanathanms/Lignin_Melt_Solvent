@@ -509,14 +509,15 @@ def edit_md_files(biomass,inp_type,polycfg,topfyle,o_sol_type\
     top_fyle = ret_file_str(topfyle)
     poly_cfg = ret_file_str(polycfg)
 
-    # edit run_md_file always
+    # edit run_md_file ALWAYS
     # job/box name
     jname = 'md_'+ biomass
     if inp_type == 'solvents' or inp_type == 'cosolvents':
         jname = jname + '_' + o_sol_type #py_jobname
 
     fin_conf = 'initconf.gro' # in gro format
-    # edit pp_fyle
+
+    # edit md_fyle
     py_fname = md_fyle
     rev_fname = py_fname.replace('_pyinp','')
     fr  = open(py_fname,'r')

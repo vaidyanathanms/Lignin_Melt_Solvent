@@ -33,15 +33,15 @@ run_all   = 1 # 1-copy files and run, 0-NO run (copies files)
 inp_type  = 'cosolvents' # melts, solvents, cosolvents
 biomass   = 'WT' # name of the biomass type
 disperse  = 'mono' # mono/poly; only for melts
-run_arr   = [3] # number of independent runs for a given biomass
+run_arr   = [4]#,5,6] # number of independent runs for a given biomass
 otyp_arr  = ['EOH','THF','GVL']  # solvent arr for solvents/cosolvents
 oname_arr = otyp_arr # change if prefix is different from name in PDB
 wtyp_arr  = ['tip3p','tip3p','tip3p'] # water arr type
 wname_arr = ['TIP3_','TIP3_','TIP3_'] # diff from prefix
 temp_arr  = [300,300,300] # NPT equilibration
 hi_t_arr  = [463,413,393] # high temperature array
-norg_arr  = [2492,1269,1462] # number of organic solvents
-nwat_arr  = [4063,5079,2032] # number of water molecules (for cosolvents)
+norg_arr  = [2237,1187,1451] # number of organic solvents
+nwat_arr  = [4610,5330,2017] # number of water molecules (for cosolvents)
 box_arr   = [11,11,13] # box size for solvent only. cosolvent=+1
 nchains   = 1     # number of polymer chains
 npoly_res = 22  # number of polymer residues
@@ -133,12 +133,6 @@ for inp_val in range(solv_len): # loop in solvents
             Prtau_parrah,ref_pres,melt_topname=couple_coeff(inp_type,\
                                                             coeff_fyle)
 
-        # Check for pdb/psf/top files of the melt/polymer
-        poly_conffile,poly_topfile=check_inp_files(workdir1,melt_topname)
-
-        # Write index groups
-        indx_fyle = create_indxgrps(workdir1,inp_type,npoly_res,\
-                                    solv_name,wat_name)
         # Find tc_groups
         tc_grp,tc_typ=create_tcgrps(inp_type,npoly_res,solv_name,wat_name)
 
@@ -147,9 +141,16 @@ for inp_val in range(solv_len): # loop in solvents
                             ,Tetau_highnvt,Tetau_berend,Tetau_parrah,\
                             Prtau_berend,Prtau_parrah,ref_temp,hi_ref_t,\
                             ref_pres,tc_grp,tc_typ,main_dir,coeff_fyle)
-        cont_run,edit_sh_fyle = cpy_sh_files(sh_dir,workdir1,\
-                                             sh_pp_fyle,sh_md_fyle)
+        # Check for tpr files. Re-edit run_md.sh irrespective of
+        # whether tpr files are found. Edit run_pp.sh iff cont_run = 0
+        cont_run = cpy_sh_files(sh_dir,workdir1,sh_pp_fyle,sh_md_fyle)
 
+        # Check for pdb/psf/top files of the melt/polymer
+        poly_conffile,poly_topfile=check_inp_files(workdir1,\
+                                                   melt_topname)
+        # Write index groups
+        indx_fyle = create_indxgrps(workdir1,inp_type,npoly_res,
+                                    solv_name,wat_name)
 
         # Copy/edit top/conf/itp files for solvents/cosolvents
         ff_dir = create_ff_dir(workdir1)
@@ -160,9 +161,12 @@ for inp_val in range(solv_len): # loop in solvents
                                                        itp_dir,ff_dir,\
                                                        inp_type,o_sol_typ,\
                                                        wat_type)
-
+                # check whether or not system is rerunning
                 poly_topedit = edit_main_top_file(poly_topfile,ff_dir,\
                                                   sol_top,sol_itp,workdir1)
+
+            else: #already present
+                poly_topedit = poly_topfile
 
         # Copy all shell script for running
         for fsh_name in sh_rep_fyl:
@@ -177,31 +181,33 @@ for inp_val in range(solv_len): # loop in solvents
         if not os.path.isdir(sum_out_dir):
             os.mkdir(sum_out_dir)
 
-        # Edit shell script files if needed (edit_sh_fyle = 1)
-        if edit_sh_fyle:
+        # Edit pre-processing shell script files iff cont_run = 0
+        if cont_run == 0: 
             if inp_type == 'melts':
-                edit_sh_files(workdir1,cont_run,biomass,inp_type,poly_conffile\
-                              ,0,0,poly_topedit,'None','None',sh_pp_fyle\
-                              ,sh_md_fyle,ff_dir,'None',0,indx_fyle)
+                edit_pp_files(biomass,inp_type,poly_conffile,0,0,\
+                              poly_topedit,'None','None',sh_pp_fyle\
+                              ,ff_dir,'None',0,indx_fyle)
             elif inp_type == 'solvents':
-                edit_sh_files(workdir1,cont_run,biomass,inp_type,poly_conffile,\
-                              n_orgsolv,0,poly_topedit,o_sol_typ,'None',\
-                              sh_pp_fyle,sh_md_fyle,ff_dir,sol_cfg,box_dim,\
-                              indx_fyle)
+                edit_pp_files(biomass,inp_type,poly_conffile,n_orgsolv\
+                              ,0,poly_topedit,o_sol_typ,'None',\
+                              sh_pp_fyle,ff_dir,sol_cfg,box_dim,indx_fyle)
             elif inp_type == 'cosolvents':
-                edit_sh_files(workdir1,cont_run,biomass,inp_type,poly_conffile,\
-                              n_orgsolv,nwater,poly_topedit,o_sol_typ,wat_type,\
-                              sh_pp_fyle,sh_md_fyle,ff_dir,sol_cfg,box_dim,\
-                              indx_fyle)
+                edit_pp_files(biomass,inp_type,poly_conffile,n_orgsolv\
+                              ,nwater,poly_topedit,o_sol_typ,wat_type,\
+                              sh_pp_fyle,ff_dir,sol_cfg,box_dim,indx_fyle)
+
+        # Edit run_md shell script files always
+        edit_md_files(biomass,inp_type,poly_conffile,poly_topedit,\
+                      o_sol_typ,sh_md_fyle,indx_fyle)
 
         # Submit preprocess job
         if run_all:
-            if not os.path.exists('/*.tpr'):
-		print('Running all: repeat_all.sh')
+            if cont_run == 0:
+                print("Running all: repeat_all.sh")
                 subprocess.call(["chmod", "777", "repeat_all.sh"])
                 subprocess.call(["./repeat_all.sh"])
             else:
-		print('Running just MD part: repeat_md.sh')
+                print("Running just MD part: repeat_md.sh")
                 subprocess.call(["chmod", "777", "repeat_md.sh"])
                 subprocess.call(["./repeat_md.sh"])
 
