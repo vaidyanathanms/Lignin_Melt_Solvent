@@ -1,0 +1,6 @@
+Ref_Pres	6
+TauTemp_NVT	0.1
+TauTemp_Berendsen	0.1
+TauPres_Berendsen	0.2
+TauTemp_Parrinello	0.2
+TauPres_Parrinello	8.0

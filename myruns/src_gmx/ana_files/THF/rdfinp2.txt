@@ -1,0 +1,1 @@
+resnr 1 to 22 and type OLG301 and name O4; resname THF and type OG3C51; resname TIP3 and name OW

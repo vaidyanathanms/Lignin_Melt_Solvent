@@ -1,0 +1,2 @@
+GVLcharmm36.itp is same as GVL.itp and GVL.prm
+All are just copies. 
