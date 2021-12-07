@@ -396,7 +396,7 @@ def edit_main_top_file(main_topfyle,ff,top_arr,itp_arr,workdir):
     edited_file = workdir + "/solvated_" + spl_str[len(spl_str)-1]
 
     # create new topology file with required details
-    # add topology before [ moleculetype ]
+    # add atomtypes and parameters before [ moleculetype ]
     inc_top = ''
     inc_pre = '#include '
     for i in range(len(top_arr)):
@@ -404,7 +404,7 @@ def edit_main_top_file(main_topfyle,ff,top_arr,itp_arr,workdir):
                   top_arr[i] + "\"" + '\n'
     inc_top = inc_top + '\n'
 
-    # add parameters before [ system ]
+    # add topologies before [ system ]
     inc_itp = ''
     inc_pre = '#include '
     for i in range(len(itp_arr)):
