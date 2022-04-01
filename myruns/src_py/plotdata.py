@@ -36,15 +36,15 @@ disperse  = 'mono' # mono/poly; only for melts
 biom_arr  = ['WT','COMT','MYB']#,'COMT','MYB'] # biomass type arr
 otyp_arr  = ['EOH','GVL','THF']  # solvent arr for solvents/cosolvents
 otyp_leg  = ['EtOH','GVL','THF']  # legend for solvents/cosolvents
-run_arr   = [4,5,6] # number of independent runs for a given biomass
+run_arr   = [7,8,9] # number of independent runs for a given biomass
 #------------------------------------------------------------------
 
 # Plot keys 0,1,2 (0-None,1-separate,2-together)
 sasa    = 0 # plot SASA distribution and average
 rad_gyr = 0 # avg rg and rg distribution
-rdf_pol = 1 # plot polymer-solvent/water RDF 0 or 1
+rdf_pol = 0 # plot polymer-solvent/water RDF 0 or 1
 rdf_bO4 = 0 # plot bO4-solvent/water RDF
-hbonds  = 0 # hbonds of ALL-solv/water/total hbonds
+hbonds  = 2 # hbonds of ALL-solv/water/total hbonds
 hb_bo4  = 0 # hbonds of bo4-solv/water/total hbonds
 hb_syr  = 0 # hbonds of syr-solv/water/total hbonds
 hb_gua  = 0 # hbonds of gua-solv/water/total hbonds
@@ -52,7 +52,7 @@ hb_gua  = 0 # hbonds of gua-solv/water/total hbonds
 
 # Directory paths
 main_dir = os.getcwd() # current dir
-scr_dir  = '/gpfs/alpine/bip189/scratch/vaidyams' # scratch dir
+scr_dir  = '/lustre/or-scratch/cades-bsd/v0e' # scratch dir
 scr_dir  = scr_dir + '/lignin'
 if not os.path.isdir(scr_dir):
     print("FATAL ERROR: ", scr_dir, " not found")
@@ -463,17 +463,55 @@ if hbonds != 0:
         fc_hb.write('%s\t%s\t%s\t%s\t%s\n' %('Biomass','Solvent',\
                                              'HB_Wat','HB_Sol',\
                                              'HB_Tot'))
+ 
+        hberr = consol_dir + '/hberrdata.dat'
+        fc_er = open(hberr,'w')
+        fc_er.write('%s\t%s\t%s\t%s\t%s\n' %('Biomass','Solvent',\
+                                             'Err_HBWat','Err_HBSol',\
+                                             'Err_HBTot'))
    
+        # Write casewise data
+        hbsol_case = consol_dir + '/hb_solcase.dat'
+        fc_hbsol = open(hbsol_case,'w')
+        fc_hbsol.write('%s\t%s\t%s\t%s\t%s\n' %('Biomass','Solvent',\
+                                                'R1_HBSol','R2_HBSol',\
+                                                'R3_HBSol'))
+
+        # Write casewise data
+        hbwat_case = consol_dir + '/hb_watcase.dat'
+        fc_hbwat = open(hbwat_case,'w')
+        fc_hbwat.write('%s\t%s\t%s\t%s\t%s\n' %('Biomass','Solvent',\
+                                                'R1_HBWat','R2_HBWat',\
+                                                'R3_HBWat'))
+
+        # Write casewise data
+        hbtot_case = consol_dir + '/hb_totcase.dat'
+        fc_hbtot = open(hbtot_case,'w')
+        fc_hbtot.write('%s\t%s\t%s\t%s\t%s\n' %('Biomass','Solvent',\
+                                                'R1_HBTot','R2_HBTot',\
+                                                'R3_HBTot'))  
+
+    
     for bio_indx in range(len(biom_arr)): # loop in biomass
         biomass = biom_arr[bio_indx]
         yhbw_avg = np.zeros(0); yhbs_avg = np.zeros(0)
         yhbt_avg = np.zeros(0)
+
+        ehbw_avg = np.zeros(0); ehbs_avg = np.zeros(0)
+        ehbt_avg = np.zeros(0)
 
         for sol_indx in range(len(otyp_arr)): # loop in solvents
             solv_type = otyp_arr[sol_indx]
             solv_leg  = otyp_leg[sol_indx]
             y_wavg = 0; y_savg = 0; y_tavg = 0
             n_wfyl = 0; n_sfyl = 0; n_tfyl = 0
+
+            fc_hbwat.write('%s\t%s\t' %(biomass,solv_type))        
+            fc_hbsol.write('%s\t%s\t' %(biomass,solv_type))
+            fc_hbtot.write('%s\t%s\t' %(biomass,solv_type))
+
+            hbwatavg = np.zeros(0); hbsolavg = np.zeros(0)
+            hbtotavg = np.zeros(0)
 
             for casenum in range(len(run_arr)): # loop in runarr
                 wdir,anadir,fig_dir = ret_ana_dir(scr_dir,inp_type,biomass,\
@@ -489,7 +527,9 @@ if hbonds != 0:
                 else:
                     print("wat_hbnum does not exist!")
                     continue
-
+                
+                ywatcase = 0; ysolcase = 0; ytotcase = 0
+                nwatfile = 0; nsolfile = 0; ntotfile = 0
                 for fname in fwat_list:
                     # Open and parse file
                     with open(fname) as fin:
@@ -498,9 +538,13 @@ if hbonds != 0:
                                  not line.lstrip().startswith('@'))
                         data  = np.loadtxt(lines)
 
-                    #append all hb-wat
+                    # append all hb-wat
                     y_wavg += np.sum(data[:,1]); n_wfyl += data[:,1].size
                     y_tavg += np.sum(data[:,1]); n_tfyl += data[:,1].size
+
+                    # Case wise sum (across all files)
+                    ywatcase += np.sum(data[:,1]); nwatfile += data[:,1].size
+                    ytotcase += np.sum(data[:,1]); ntotfile += data[:,1].size
                     
                 # Check file(s) for solvent hbond
                 if glob.glob(anadir + '/sol_hbnum*') != []:
@@ -520,45 +564,88 @@ if hbonds != 0:
                                  not line.lstrip().startswith('@'))
                         data  = np.loadtxt(lines)
 
-                    #append all hb-solv
+                    # append all hb-solv
                     y_savg += np.sum(data[:,1]); n_sfyl += data[:,1].size
                     y_tavg += np.sum(data[:,1])
 
-                if n_wfyl != n_sfyl: # Sanity check
+                    # Case wise sum (across all files)
+                    ysolcase += np.sum(data[:,1]); nsolfile += data[:,1].size
+                    ytotcase += np.sum(data[:,1]); 
+                    
+                  
+                if nwatfile != nsolfile or nwatfile != ntotfile: # Sanity check
+                    print(nwatfile,nsolfile)
+                    print('total HB cannot be defined')
+                    fc_hbwat.write('%g\t' %(ywatcase/nwatfile))        
+                    fc_hbsol.write('%g\t' %(ysolcase/nsolfile))
+                    fc_hbtot.write('%s\t' %('N/A'))
+            
+                fc_hbwat.write('%g\t' %(ywatcase/nwatfile))        
+                fc_hbsol.write('%g\t' %(ysolcase/nsolfile))
+                fc_hbtot.write('%g\t' %(ytotcase/ntotfile))
+            
+                # Add to case wise average for each solvent and each biomass
+                hbwatavg = np.append(hbwatavg,ywatcase/nwatfile)
+                hbsolavg = np.append(hbsolavg,ysolcase/nsolfile)
+                hbtotavg = np.append(hbtotavg,ytotcase/ntotfile)
+                
+                if n_wfyl != n_sfyl or n_wfyl != n_tfyl: # Sanity check
                     print(n_wfyl,n_sfyl)
                     print('total HB cannot be defined')
+                    continue
                     
             # append avg to overall averages
             yhbw_avg = np.append(yhbw_avg,y_wavg/n_wfyl)
             yhbs_avg = np.append(yhbs_avg,y_savg/n_sfyl)
             yhbt_avg = np.append(yhbt_avg,y_tavg/n_tfyl)
 
-        # Plot averages
-        fig1, ax1 = plt.subplots()
-        ax1.set_ylabel(r'$\langle$ #HB (Water) $\rangle$')
-        plt.style.use('seaborn-colorblind')
-        plt.tight_layout()
-        sns.barplot(otyp_arr,np.array(yhbw_avg),ax=ax1)
-        change_width(ax1,0.5)
-        fig1.savefig(fig_dir + '/'+biomass+'_HBWat.png',dpi=fig1.dpi)
-        
-        fig2, ax2 = plt.subplots()
-        ax2.set_ylabel(r'#HBs with the organic solvent')
-        plt.style.use('seaborn-colorblind')
-        plt.tight_layout()
-        sns.barplot(otyp_arr,np.array(yhbs_avg),ax=ax2)
-        change_width(ax2,0.5)
-        fig2.savefig(fig_dir + '/'+biomass+'_HBOrg.png',dpi=fig2.dpi)
-        
-        fig3, ax3 = plt.subplots()
-        ax3.set_ylabel(r'$\langle$ #HB (Total) $\rangle$')
-        plt.style.use('seaborn-colorblind')
-        plt.tight_layout()
-        sns.barplot(otyp_arr,np.array(yhbt_avg),ax=ax3)
-        change_width(ax3,0.5)
-        fig3.savefig(fig_dir + '/'+biomass+'_HBTot.png',dpi=fig3.dpi)
+            if abs((y_wavg/n_wfyl)-np.average(hbwatavg)) > 0.001*np.average(hbwatavg):
+                print("Wat averages not same", y_wavg/n_wfyl, np.average(hbwatavg))
+                exit('ERROR')
+            if abs((y_savg/n_sfyl)-np.average(hbsolavg)) > 0.001*np.average(hbsolavg):
+                print("Sol averages not same", y_savg/n_sfyl, np.average(hbsolavg))
+                exit('ERROR')
+            if abs((y_tavg/n_tfyl)-np.average(hbtotavg)) > 0.001*np.average(hbtotavg):
+                print("Tot averages not same", y_tavg/n_tfyl, np.average(hbtotavg))
+                exit('ERROR')
 
-        plt.close(fig1); plt.close(fig2); plt.close(fig3)
+            
+            ehbw_avg = np.append(ehbw_avg,np.std(hbwatavg))
+            ehbs_avg = np.append(ehbs_avg,np.std(hbsolavg))
+            ehbt_avg = np.append(ehbt_avg,np.std(hbtotavg))
+
+            fc_hbwat.write('\n')
+            fc_hbsol.write('\n')
+            fc_hbtot.write('\n')
+
+            
+
+        # Plot averages
+#        fig1, ax1 = plt.subplots()
+#        ax1.set_ylabel(r'$\langle$ #HB (Water) $\rangle$')
+#        plt.style.use('seaborn-colorblind')
+#        plt.tight_layout()
+#        sns.barplot(otyp_arr,np.array(yhbw_avg),ax=ax1)
+#        change_width(ax1,0.5)
+#        fig1.savefig(fig_dir + '/'+biomass+'_HBWat.png',dpi=fig1.dpi)
+        
+#        fig2, ax2 = plt.subplots()
+#        ax2.set_ylabel(r'#HBs with the organic solvent')
+#        plt.style.use('seaborn-colorblind')
+#        plt.tight_layout()
+#        sns.barplot(otyp_arr,np.array(yhbs_avg),ax=ax2)
+#        change_width(ax2,0.5)
+#        fig2.savefig(fig_dir + '/'+biomass+'_HBOrg.png',dpi=fig2.dpi)
+        
+#        fig3, ax3 = plt.subplots()
+#        ax3.set_ylabel(r'$\langle$ #HB (Total) $\rangle$')
+#        plt.style.use('seaborn-colorblind')
+#        plt.tight_layout()
+#        sns.barplot(otyp_arr,np.array(yhbt_avg),ax=ax3)
+#        change_width(ax3,0.5)
+#        fig3.savefig(fig_dir + '/'+biomass+'_HBTot.png',dpi=fig3.dpi)
+
+#        plt.close(fig1); plt.close(fig2); plt.close(fig3)
         # Save average data        
         if hbonds == 2:
             for indx in range(len(otyp_arr)): # loop in solvents
@@ -566,17 +653,32 @@ if hbonds != 0:
                 solv_leg  = otyp_leg[indx]
                 hbw = yhbw_avg[indx]; hbs = yhbs_avg[indx]
                 hbt = yhbt_avg[indx]
+                ebw = ehbw_avg[indx]; ebs = ehbs_avg[indx]
+                ebt = ehbt_avg[indx]
                 fc_hb.write('%s\t%s\t%g\t%g\t%g\n' %(biomass,solv_leg,\
                                                      hbw,hbs,hbt))
+                fc_er.write('%s\t%s\t%g\t%g\t%g\n' %(biomass,solv_leg,\
+                                                     ebw,ebs,ebt))
+
     if hbonds == 2:
         fc_hb.close()
+        fc_er.close()
         df=pd.read_table(hbc_fyl)
+        edf=pd.read_table(hberr)
         maxval = df['HB_Tot'].max()
         figa, axa = plt.subplots()
         plt.style.use('seaborn-colorblind')
         plt.tight_layout()
         sns.barplot(x="Biomass",y="HB_Tot",hue="Solvent",data=df,\
-                    ax=axa)
+                    ax=axa,ci=None)
+        #--To plot errorbar: https://stackoverflow.com/questions/62820959/use-precalculated-error-bars-with-seaborn-and-barplot
+        conc2=[0,0,0,1,1,1,2,2,2]
+        width = .27
+        add = [-1*width, 0 , width, -1*width, 0 , width, -1*width, 0 , width,]
+        x = np.array(conc2)+np.array(add)
+        plt.errorbar(x = x, y = df['HB_Tot'],
+                     yerr=edf['Err_HBTot'], fmt='none', c= 'black', capsize = 2)
+        #----------------------------------------------------------------
         axa.set_ylabel(r'$\langle$ #HB (Total) $\rangle$')
         axa.set_ylim([0,1.2*maxval])
         axa.legend(loc=0,ncol = len(axa.lines))
@@ -604,11 +706,20 @@ if hbonds != 0:
         axa.set_ylabel(r'$\langle$ #HBs with the Organic Solvent $\rangle$')
         axa.set_ylim([0,1.2*maxval])
         axa.set_xlabel('')
+        axa.legend(loc=0,ncol = len(axa.lines))
         plt.minorticks_on()
         axa.tick_params(axis='x', which='minor', bottom=False)
-        axa.legend(loc=0,ncol = len(axa.lines))
+        #--To plot errorbar: https://stackoverflow.com/questions/62820959/use-precalculated-error-bars-with-seaborn-and-barplot
+        conc2=[0,0,0,1,1,1,2,2,2]
+        width = .27
+        add = [-1*width, 0 , width, -1*width, 0 , width, -1*width, 0 , width,]
+        x = np.array(conc2)+np.array(add)
+        plt.errorbar(x = x, y = df['HB_Sol'],
+                     yerr=edf['Err_HBSol'], fmt='none', c= 'black', capsize = 2)
+        #-----------------------------------------------------------------------
+        axa.tick_params(axis='x', which='minor', bottom=False)
         change_width(axa,0.2)
-        figa.savefig(fig_dir + '/'+'AllHBOsol.png',dpi=figa.dpi)
+        figa.savefig(fig_dir + '/'+'AllHBSol.png',dpi=figa.dpi)
 #------------------------------------------------------------------
 
 # Plot beta-O-4 hydrogen bonds with water and solvent
